@@ -1,0 +1,5 @@
+paket.exe
+packages/
+bin/
+obj/
+artifacts/
