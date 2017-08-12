@@ -18,18 +18,25 @@ open HCup.Models
 // Web app
 // ---------------------------------
 
-let locations = new ConcurrentDictionary<uint32, Location>()
+let locations = new ConcurrentDictionary<int, Location>()
+let users = new ConcurrentDictionary<int, User>()
 
-let getLocations httpContext = 
-    async {
-        return! json locations httpContext
-    }
+let getLocation id httpContext = 
+    match locations.TryGetValue id with
+    | true, location -> json location httpContext
+    | _ -> setStatusCode 404 httpContext    
+    
+let getUser id httpContext = 
+    match users.TryGetValue id with
+    | true, user -> json user httpContext
+    | _ -> setStatusCode 404 httpContext  
 
 let webApp = 
     choose [
         GET >=>
             choose [
-                route "/" >=> getLocations
+                routef "/locations/%i" getLocation
+                routef "/users/%i" getUser
             ]
         setStatusCode 404 >=> text "Not Found" ]
 
@@ -65,6 +72,20 @@ let loadData folder =
         |> Seq.map (fun loc -> locations.TryAdd(loc.id, loc)) 
         |> Seq.toList
         |> ignore
+    
+    Directory.EnumerateFiles(folder, "users_*.json")
+        |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Users>)
+        |> Seq.collect (fun usersObj -> usersObj.users)
+        |> Seq.map (fun user -> users.TryAdd(user.id, user)) 
+        |> Seq.toList
+        |> ignore
+
+    // Directory.EnumerateFiles(folder, "locations_*.json")
+    //     |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Locations>)
+    //     |> Seq.collect (fun locationsObj -> locationsObj.locations)
+    //     |> Seq.map (fun loc -> locations.TryAdd(loc.id, loc)) 
+    //     |> Seq.toList
+    //     |> ignore
 
 [<EntryPoint>]
 let main argv =
