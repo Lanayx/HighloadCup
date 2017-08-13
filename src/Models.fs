@@ -3,7 +3,7 @@ namespace HCup.Models
 [<CLIMutable>]
 type Location =
     {
-        distance : string
+        distance : uint16
         city: string
         place: string
         id: int32

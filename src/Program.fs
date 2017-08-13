@@ -69,37 +69,79 @@ let addUser (httpContext: HttpContext) =
 
 type UserVisit = { mark: uint8; visited_at: uint32; place: string }
 type UserVisits = { visits: UserVisit[] }
+[<CLIMutable>]
+type QueryVisit = { fromDate: uint32 option; toDate: uint32 option; country: string; toDistance: uint16 option}
+
+let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
+    let location = 
+        if (String.IsNullOrEmpty(query.country) |> not || query.toDistance.IsSome)
+        then Some locations.[visit.location]
+        else None
+    (query.fromDate.IsNone || visit.visited_at > query.fromDate.Value)
+        && (query.toDate.IsNone || visit.visited_at < query.toDate.Value)
+        && (String.IsNullOrEmpty(query.country) || location.Value.country = query.country)
+        && (query.toDistance.IsNone || location.Value.distance < query.toDistance.Value)
+
 
 let getUserVisits userId (httpContext: HttpContext) = 
     if (users.Keys.Contains(userId))
     then
+        let query = httpContext.BindQueryString<QueryVisit>()
         async {
             let usersVisits = visits 
                               |> Seq.toArray 
                               |> Array.map (fun keyValue -> keyValue.Value )      
                               |> Array.filter (fun visit -> visit.user = userId)
+                              |> Array.filter (filterByQueryVisit query)
                               |> Array.map (fun visit -> {
                                                              mark = visit.mark
                                                              visited_at = visit.visited_at
                                                              place = locations.[visit.location].place
                                                          })
-            return! json usersVisits httpContext
+                              |> Array.sortBy (fun v -> v.visited_at)
+            return! json { visits = usersVisits } httpContext
         }
     else
         setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| httpContext
 
 type Average = { avg: float }
+[<CLIMutable>]
+type QueryAvg = { fromDate: uint32 option; toDate: uint32 option; fromAge: int option; toAge: int option; gender: string}
+
+let convertToDate timestamp =
+    (DateTime(1970, 1, 1, 0, 0, 0, 0)).AddSeconds(timestamp)
+
+let diffYears (startDate: DateTime) (endDate: DateTime) =
+    (endDate.Year - startDate.Year - 1) + (if ((endDate.Month > startDate.Month) || ((endDate.Month = startDate.Month) && (endDate.Day >= startDate.Day))) then 1 else 0)
+
+
+let filterByQueryAvg (query: QueryAvg) (visit: Visit) =
+
+    let user = 
+        if (String.IsNullOrEmpty(query.gender) |> not || query.fromAge.IsSome || query.toAge.IsSome)
+        then Some users.[visit.user]
+        else None
+
+    (query.fromDate.IsNone || visit.visited_at > query.fromDate.Value)
+        && (query.toDate.IsNone || visit.visited_at < query.toDate.Value)
+        && (String.IsNullOrEmpty(query.gender) || user.Value.gender = query.gender)
+        && (query.toAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) ((float)visit.visited_at |> convertToDate)) <  query.toAge.Value)
+        && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) ((float)visit.visited_at |> convertToDate)) > query.fromAge.Value)
 
 let getAvgMark locationId (httpContext: HttpContext) = 
     if (locations.Keys.Contains(locationId))
     then
+        let query = httpContext.BindQueryString<QueryAvg>()
         async {
-            let avg = visits 
+            let markArray = visits 
                               |> Seq.toArray 
                               |> Array.map (fun keyValue -> keyValue.Value )      
                               |> Array.filter (fun visit -> visit.location = locationId)
-                              |> Array.averageBy (fun visit -> (float)visit.mark)
-            return! json { avg = Math.Round(avg,5) } httpContext
+                              |> Array.filter (filterByQueryAvg query)
+            let avg = match markArray with
+                      | [||] -> 0.0
+                      | arr -> Math.Round(arr |> Array.averageBy (fun visit -> (float)visit.mark), 5)
+            return! json { avg = avg } httpContext
         }
     else
         setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| httpContext
@@ -143,14 +185,8 @@ let configureApp (app : IApplicationBuilder) =
     app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
-// let configureServices (services : IServiceCollection) =
-//     let sp  = services.BuildServiceProvider()
-//     let env = sp.GetService<IHostingEnvironment>()
-//     let viewsFolderPath = Path.Combine(env.ContentRootPath, "Views")
-//     services.AddRazorEngine viewsFolderPath |> ignore
-
 let configureLogging (loggerFactory : ILoggerFactory) =
-    loggerFactory.AddConsole(LogLevel.Information).AddDebug() |> ignore
+    loggerFactory.AddConsole(LogLevel.Information) |> ignore
 
 let loadData folder =
     Directory.EnumerateFiles(folder, "locations_*.json")
@@ -187,7 +223,6 @@ let main argv =
     WebHostBuilder()
         .UseKestrel()
         .Configure(Action<IApplicationBuilder> configureApp)
-        //.ConfigureServices(Action<IServiceCollection> configureServices)
         .ConfigureLogging(Action<ILoggerFactory> configureLogging)
         .Build()
         .Run()
