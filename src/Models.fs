@@ -16,6 +16,10 @@ type Locations =
         locations : Location[]
     }
 
+type Sex = 
+    | m = 'm'
+    | f = 'f'
+
 [<CLIMutable>]
 type User =
     {
@@ -23,7 +27,7 @@ type User =
         first_name : string
         last_name: string
         birth_date: int64
-        gender: string
+        gender: Sex
         email: string
     }
 

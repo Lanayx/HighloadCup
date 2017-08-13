@@ -106,7 +106,7 @@ let getUserVisits userId (httpContext: HttpContext) =
 
 type Average = { avg: float }
 [<CLIMutable>]
-type QueryAvg = { fromDate: uint32 option; toDate: uint32 option; fromAge: int option; toAge: int option; gender: string}
+type QueryAvg = { fromDate: uint32 option; toDate: uint32 option; fromAge: int option; toAge: int option; gender: Sex option}
 
 let convertToDate timestamp =
     (DateTime(1970, 1, 1, 0, 0, 0, 0)).AddSeconds(timestamp)
@@ -118,15 +118,15 @@ let diffYears (startDate: DateTime) (endDate: DateTime) =
 let filterByQueryAvg (query: QueryAvg) (visit: Visit) =
 
     let user = 
-        if (String.IsNullOrEmpty(query.gender) |> not || query.fromAge.IsSome || query.toAge.IsSome)
+        if (query.gender.IsSome || query.fromAge.IsSome || query.toAge.IsSome)
         then Some users.[visit.user]
         else None
 
     (query.fromDate.IsNone || visit.visited_at > query.fromDate.Value)
         && (query.toDate.IsNone || visit.visited_at < query.toDate.Value)
-        && (String.IsNullOrEmpty(query.gender) || user.Value.gender = query.gender)
-        && (query.toAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) ((float)visit.visited_at |> convertToDate)) <  query.toAge.Value)
-        && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) ((float)visit.visited_at |> convertToDate)) > query.fromAge.Value)
+        && (query.gender.IsNone || user.Value.gender = query.gender.Value)
+        && (query.toAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) <  query.toAge.Value)
+        && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) > query.fromAge.Value)
 
 let getAvgMark locationId (httpContext: HttpContext) = 
     if (locations.Keys.Contains(locationId))
