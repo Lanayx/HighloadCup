@@ -1,5 +1,7 @@
 namespace HCup.Models
 
+open System
+
 [<CLIMutable>]
 type Location =
     {
@@ -7,6 +9,15 @@ type Location =
         city: string
         place: string
         id: int32
+        country: string
+    }
+
+[<CLIMutable>]
+type LocationUpd =
+    {
+        distance : Nullable<uint16>
+        city: string
+        place: string
         country: string
     }
 
@@ -19,6 +30,16 @@ type Locations =
 type Sex = 
     | m = 'm'
     | f = 'f'
+
+[<CLIMutable>]
+type UserUpd =
+    {
+        first_name : string
+        last_name: string
+        birth_date: Nullable<int64>
+        gender: Nullable<Sex>
+        email: string
+    }
 
 [<CLIMutable>]
 type User =
@@ -35,6 +56,15 @@ type User =
 type Users =
     {
         users : User[]
+    }
+
+[<CLIMutable>]
+type VisitUpd =
+    {
+        user : Nullable<int32>
+        location: Nullable<int32>
+        visited_at: Nullable<uint32>
+        mark: Nullable<uint8>
     }
 
 [<CLIMutable>]

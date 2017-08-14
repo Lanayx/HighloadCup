@@ -28,36 +28,78 @@ let getEntity (collection: ConcurrentDictionary<int, 'a>) id httpContext =
     | true, entity -> json entity httpContext
     | _ -> setStatusCode 404 httpContext
 
-let isValidLocation location =
+let isValidLocation (location: Location) =
     location.country.Length <=50 
     && location.city.Length <=50
 
-let isValidUser user =
+let isValidUser (user: User) =
     user.email.Length <= 100 
     && user.first_name.Length <=50 
     && user.last_name.Length <=50 
 
-let isValidVisit visit =
+let isValidVisit (visit: Visit) =
     visit.mark <= 5uy 
     // && users.ContainsKey(visit.user)
     // && locations.ContainsKey(visit.location)      
 
 
-let allowedUpdate (collection: ConcurrentDictionary<int, 'a>) isValid id (httpContext: HttpContext) = 
+let updateLocation (location:Location) (httpContext: HttpContext) = 
     async {
-        let! value = httpContext.BindJson<'a>()
-        if (isValid value)
-        then
-            collection.[id] <- value
-            return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext       
-        else
-            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext
- 
+        let! value = httpContext.BindJson<LocationUpd>()
+        let updatedLocation  = 
+            { location with 
+                distance = if value.distance.HasValue |> not then location.distance else value.distance.Value 
+                city = if value.city = null then location.city else value.city 
+                place = if value.place = null then location.place else value.place 
+                country = if value.country = null then location.country else value.country }
+
+        if (isValidLocation updatedLocation |> not)
+        then failwith "Invalid data"
+        
+        return updatedLocation 
     }
 
-let updateEntity (collection: ConcurrentDictionary<int, 'a>) isValid id (httpContext: HttpContext) = 
+let updateUser (user:User) (httpContext: HttpContext) = 
+    async {
+        let! value = httpContext.BindJson<UserUpd>()
+        let updatedUser  = 
+            { user with 
+                first_name = if value.first_name = null then user.first_name else value.first_name
+                last_name = if value.last_name = null then user.last_name else value.last_name 
+                birth_date = if value.birth_date.HasValue |> not then user.birth_date else value.birth_date.Value 
+                gender = if value.gender.HasValue |> not then user.gender else value.gender.Value 
+                email = if value.email = null then user.email else value.email }
+
+        if (isValidUser updatedUser |> not)
+        then failwith "Invalid data"
+        
+        return updatedUser 
+    }
+
+let updateVisit (visit:Visit) (httpContext: HttpContext) = 
+    async {
+        let! value = httpContext.BindJson<VisitUpd>()
+        let updatedVisit  = 
+            { visit with 
+                user = if value.user.HasValue |> not then visit.user else value.user.Value
+                location = if value.location.HasValue |> not then visit.location else value.location.Value 
+                visited_at = if value.visited_at.HasValue |> not then visit.visited_at else value.visited_at.Value 
+                mark = if value.mark.HasValue |> not then visit.mark else value.mark.Value }
+
+        if (isValidVisit updatedVisit |> not)
+        then failwith "Invalid data"
+        
+        return updatedVisit 
+    }
+
+let updateEntity (collection: ConcurrentDictionary<int, 'a>) updateFunc id (httpContext: HttpContext) = 
     match collection.TryGetValue id with
-    | true, entity -> allowedUpdate collection isValid id httpContext
+    | true, entity -> 
+        async {
+            let! updatedEntity = updateFunc entity httpContext
+            collection.[id] <- updatedEntity
+            return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext 
+        }
     | _ -> setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| httpContext
 
 let addLocation (httpContext: HttpContext) = 
@@ -191,9 +233,9 @@ let webApp =
             ]
         POST >=>
             choose [
-                routef "/locations/%i" <| updateEntity locations isValidLocation
-                routef "/users/%i" <| updateEntity users isValidUser
-                routef "/visits/%i" <| updateEntity visits isValidVisit
+                routef "/locations/%i" <| updateEntity locations updateLocation
+                routef "/users/%i" <| updateEntity users updateUser
+                routef "/visits/%i" <| updateEntity visits updateVisit
 
                 route "/locations/new" >=> addLocation
                 route "/users/new" >=> addUser
