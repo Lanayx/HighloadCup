@@ -45,7 +45,10 @@ let isValidVisit (visit: Visit) =
 
 let updateLocation (location:Location) (httpContext: HttpContext) = 
     async {
-        let! value = httpContext.BindJson<LocationUpd>()
+        let! json = httpContext.ReadBodyFromRequest()
+        if (json.Contains(": null"))
+            then failwith "Null field"
+        let value = JsonConvert.DeserializeObject<LocationUpd>(json)
         let updatedLocation  = 
             { location with 
                 distance = if value.distance.HasValue |> not then location.distance else value.distance.Value 
@@ -61,7 +64,10 @@ let updateLocation (location:Location) (httpContext: HttpContext) =
 
 let updateUser (user:User) (httpContext: HttpContext) = 
     async {
-        let! value = httpContext.BindJson<UserUpd>()
+        let! json = httpContext.ReadBodyFromRequest()
+        if (json.Contains(": null"))
+            then failwith "Null field"
+        let value = JsonConvert.DeserializeObject<UserUpd>(json)
         let updatedUser  = 
             { user with 
                 first_name = if value.first_name = null then user.first_name else value.first_name
@@ -78,7 +84,10 @@ let updateUser (user:User) (httpContext: HttpContext) =
 
 let updateVisit (visit:Visit) (httpContext: HttpContext) = 
     async {
-        let! value = httpContext.BindJson<VisitUpd>()
+        let! json = httpContext.ReadBodyFromRequest()
+        if (json.Contains(": null"))
+            then failwith "Null field"
+        let value = JsonConvert.DeserializeObject<VisitUpd>(json)
         let updatedVisit  = 
             { visit with 
                 user = if value.user.HasValue |> not then visit.user else value.user.Value
