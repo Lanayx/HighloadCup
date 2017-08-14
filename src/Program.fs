@@ -28,16 +28,36 @@ let getEntity (collection: ConcurrentDictionary<int, 'a>) id httpContext =
     | true, entity -> json entity httpContext
     | _ -> setStatusCode 404 httpContext
 
-let allowedUpdate (collection: ConcurrentDictionary<int, 'a>) id (httpContext: HttpContext) = 
+let isValidLocation location =
+    location.country.Length <=50 
+    && location.city.Length <=50
+
+let isValidUser user =
+    user.email.Length <= 100 
+    && user.first_name.Length <=50 
+    && user.last_name.Length <=50 
+
+let isValidVisit visit =
+    visit.mark < 5uy 
+    && users.ContainsKey(visit.user)
+    && locations.ContainsKey(visit.location)      
+
+
+let allowedUpdate (collection: ConcurrentDictionary<int, 'a>) isValid id (httpContext: HttpContext) = 
     async {
         let! value = httpContext.BindJson<'a>()
-        collection.[id] <- value
-        return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext        
+        if (isValid value)
+        then
+            collection.[id] <- value
+            return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext       
+        else
+            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext
+ 
     }
 
-let updateEntity (collection: ConcurrentDictionary<int, 'a>) id (httpContext: HttpContext) = 
+let updateEntity (collection: ConcurrentDictionary<int, 'a>) isValid id (httpContext: HttpContext) = 
     match collection.TryGetValue id with
-    | true, entity -> allowedUpdate collection id httpContext
+    | true, entity -> allowedUpdate collection isValid id httpContext
     | _ -> setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| httpContext
 
 let addLocation (httpContext: HttpContext) = 
@@ -159,9 +179,9 @@ let webApp =
             ]
         POST >=>
             choose [
-                routef "/locations/%i" <| updateEntity locations
-                routef "/users/%i" <| updateEntity users
-                routef "/visits/%i" <| updateEntity visits
+                routef "/locations/%i" <| updateEntity locations isValidLocation
+                routef "/users/%i" <| updateEntity users isValidUser
+                routef "/visits/%i" <| updateEntity visits isValidVisit
 
                 route "/locations/new" >=> addLocation
                 route "/users/new" >=> addUser
@@ -186,7 +206,7 @@ let configureApp (app : IApplicationBuilder) =
     app.UseGiraffe webApp
 
 let configureLogging (loggerFactory : ILoggerFactory) =
-    loggerFactory.AddConsole(LogLevel.Information) |> ignore
+    loggerFactory.AddConsole(LogLevel.Error) |> ignore
 
 let loadData folder =
     Directory.EnumerateFiles(folder, "locations_*.json")
