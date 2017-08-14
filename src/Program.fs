@@ -38,9 +38,9 @@ let isValidUser user =
     && user.last_name.Length <=50 
 
 let isValidVisit visit =
-    visit.mark < 5uy 
-    && users.ContainsKey(visit.user)
-    && locations.ContainsKey(visit.location)      
+    visit.mark <= 5uy 
+    // && users.ContainsKey(visit.user)
+    // && locations.ContainsKey(visit.location)      
 
 
 let allowedUpdate (collection: ConcurrentDictionary<int, 'a>) isValid id (httpContext: HttpContext) = 
@@ -63,28 +63,40 @@ let updateEntity (collection: ConcurrentDictionary<int, 'a>) isValid id (httpCon
 let addLocation (httpContext: HttpContext) = 
     async {
         let! value = httpContext.BindJson<Location>()
-        let result = match locations.TryAdd(value.id, value) with
-                     | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
-                     | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
-        return! result        
+        if (isValidLocation value)
+        then
+            let result = match locations.TryAdd(value.id, value) with
+                         | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
+                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
+            return! result
+        else
+            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext    
     }
 
 let addVisit (httpContext: HttpContext) = 
     async {
         let! value = httpContext.BindJson<Visit>()
-        let result = match visits.TryAdd(value.id, value) with
-                     | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
-                     | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
-        return! result        
+        if (isValidVisit value)
+        then
+            let result = match visits.TryAdd(value.id, value) with
+                         | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
+                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
+            return! result      
+        else
+            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext 
     }
 
 let addUser (httpContext: HttpContext) = 
     async {
         let! value = httpContext.BindJson<User>()
-        let result = match users.TryAdd(value.id, value) with
-                     | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
-                     | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
-        return! result        
+        if (isValidUser value)
+        then
+            let result = match users.TryAdd(value.id, value) with
+                         | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
+                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
+            return! result        
+        else
+            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext 
     }
 
 type UserVisit = { mark: uint8; visited_at: uint32; place: string }
