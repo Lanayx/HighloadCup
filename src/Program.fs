@@ -151,7 +151,7 @@ let addUser (httpContext: HttpContext) =
     }
 
 type UserVisit = { mark: uint8; visited_at: uint32; place: string }
-type UserVisits = { visits: UserVisit[] }
+type UserVisits = { visits: seq<UserVisit> }
 [<CLIMutable>]
 type QueryVisit = { fromDate: uint32 option; toDate: uint32 option; country: string; toDistance: uint16 option}
 
@@ -171,17 +171,16 @@ let getUserVisits userId (httpContext: HttpContext) =
     then
         let query = httpContext.BindQueryString<QueryVisit>()
         async {
-            let usersVisits = visits 
-                              |> Seq.toArray 
-                              |> Array.map (fun keyValue -> keyValue.Value )      
-                              |> Array.filter (fun visit -> visit.user = userId)
-                              |> Array.filter (filterByQueryVisit query)
-                              |> Array.map (fun visit -> {
+            let usersVisits = visits  
+                              |> Seq.map (fun keyValue -> keyValue.Value )      
+                              |> Seq.filter (fun visit -> visit.user = userId)
+                              |> Seq.filter (filterByQueryVisit query)
+                              |> Seq.map (fun visit -> {
                                                              mark = visit.mark
                                                              visited_at = visit.visited_at
                                                              place = locations.[visit.location].place
                                                          })
-                              |> Array.sortBy (fun v -> v.visited_at)
+                              |> Seq.sortBy (fun v -> v.visited_at)
             return! json { visits = usersVisits } httpContext
         }
     else
@@ -217,13 +216,12 @@ let getAvgMark locationId (httpContext: HttpContext) =
         let query = httpContext.BindQueryString<QueryAvg>()
         async {
             let markArray = visits 
-                              |> Seq.toArray 
-                              |> Array.map (fun keyValue -> keyValue.Value )      
-                              |> Array.filter (fun visit -> visit.location = locationId)
-                              |> Array.filter (filterByQueryAvg query)
+                              |> Seq.map (fun keyValue -> keyValue.Value )      
+                              |> Seq.filter (fun visit -> visit.location = locationId)
+                              |> Seq.filter (filterByQueryAvg query)
             let avg = match markArray with
-                      | [||] -> 0.0
-                      | arr -> Math.Round(arr |> Array.averageBy (fun visit -> (float)visit.mark), 5)
+                      | seq when Seq.isEmpty seq -> 0.0
+                      | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> (float)visit.mark), 5)
             return! json { avg = avg } httpContext
         }
     else
