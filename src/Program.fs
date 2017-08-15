@@ -22,6 +22,11 @@ open HCup.Models
 let locations = new ConcurrentDictionary<int, Location>()
 let users = new ConcurrentDictionary<int, User>()
 let visits = new ConcurrentDictionary<int, Visit>()
+
+type VisitsCollection = ConcurrentDictionary<int, int>
+let visitLocations = new ConcurrentDictionary<int, VisitsCollection>()
+let visitUsers = new ConcurrentDictionary<int, VisitsCollection>()
+
  
 let getEntity (collection: ConcurrentDictionary<int, 'a>) id httpContext = 
     match collection.TryGetValue id with
@@ -82,18 +87,37 @@ let updateUser (user:User) (httpContext: HttpContext) =
         return updatedUser 
     }
 
-let updateVisit (visit:Visit) (httpContext: HttpContext) = 
+let getNewUserValue (oldValue: Visit) (newValue: VisitUpd) = 
+    if (newValue.user.HasValue)
+    then 
+        visitUsers.[oldValue.user].TryRemove(oldValue.id) |> ignore
+        visitUsers.[newValue.user.Value].TryAdd(oldValue.id, oldValue.id) |> ignore
+        newValue.user.Value
+    else 
+        oldValue.user
+
+let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) = 
+    if (newValue.location.HasValue)
+    then 
+        visitLocations.[oldValue.location].TryRemove(oldValue.id) |> ignore
+        visitLocations.[newValue.location.Value].TryAdd(oldValue.id, oldValue.id) |> ignore
+        newValue.location.Value
+    else 
+        oldValue.location
+
+
+let updateVisit (oldVisit:Visit) (httpContext: HttpContext) = 
     async {
         let! json = httpContext.ReadBodyFromRequest()
         if (json.Contains(": null"))
             then failwith "Null field"
         let value = JsonConvert.DeserializeObject<VisitUpd>(json)
         let updatedVisit  = 
-            { visit with 
-                user = if value.user.HasValue |> not then visit.user else value.user.Value
-                location = if value.location.HasValue |> not then visit.location else value.location.Value 
-                visited_at = if value.visited_at.HasValue |> not then visit.visited_at else value.visited_at.Value 
-                mark = if value.mark.HasValue |> not then visit.mark else value.mark.Value }
+            { oldVisit with 
+                user = getNewUserValue oldVisit value
+                location = getNewLocationValue oldVisit value 
+                visited_at = if value.visited_at.HasValue |> not then oldVisit.visited_at else value.visited_at.Value 
+                mark = if value.mark.HasValue |> not then oldVisit.mark else value.mark.Value }
 
         if (isValidVisit updatedVisit |> not)
         then failwith "Invalid data"
@@ -119,6 +143,7 @@ let addLocation (httpContext: HttpContext) =
             let result = match locations.TryAdd(value.id, value) with
                          | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
+            visitLocations.TryAdd(value.id, ConcurrentDictionary<int,int>()) |> ignore
             return! result
         else
             return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext    
@@ -131,7 +156,9 @@ let addVisit (httpContext: HttpContext) =
         then
             let result = match visits.TryAdd(value.id, value) with
                          | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
-                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
+                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext
+            visitLocations.[value.location].TryAdd(value.id, value.id) |> ignore
+            visitUsers.[value.user].TryAdd(value.id, value.id) |> ignore
             return! result      
         else
             return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext 
@@ -145,6 +172,7 @@ let addUser (httpContext: HttpContext) =
             let result = match users.TryAdd(value.id, value) with
                          | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
+            visitUsers.TryAdd(value.id, ConcurrentDictionary<int,int>()) |> ignore
             return! result        
         else
             return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext 
@@ -167,13 +195,12 @@ let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
 
 
 let getUserVisits userId (httpContext: HttpContext) = 
-    if (users.Keys.Contains(userId))
-    then
+    match users.TryGetValue(userId) with
+    | true, user ->
         let query = httpContext.BindQueryString<QueryVisit>()
-        async {
-            let usersVisits = visits  
-                              |> Seq.map (fun keyValue -> keyValue.Value )      
-                              |> Seq.filter (fun visit -> visit.user = userId)
+        async { 
+            let usersVisits = visitUsers.[userId].Keys  
+                              |> Seq.map (fun key -> visits.[key])   
                               |> Seq.filter (filterByQueryVisit query)
                               |> Seq.map (fun visit -> {
                                                              mark = visit.mark
@@ -183,7 +210,7 @@ let getUserVisits userId (httpContext: HttpContext) =
                               |> Seq.sortBy (fun v -> v.visited_at)
             return! json { visits = usersVisits } httpContext
         }
-    else
+    | false, _ ->
         setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| httpContext
 
 type Average = { avg: float }
@@ -211,20 +238,19 @@ let filterByQueryAvg (query: QueryAvg) (visit: Visit) =
         && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) > query.fromAge.Value)
 
 let getAvgMark locationId (httpContext: HttpContext) = 
-    if (locations.Keys.Contains(locationId))
-    then
+    match locations.TryGetValue(locationId) with
+    | true, location ->
         let query = httpContext.BindQueryString<QueryAvg>()
         async {
-            let markArray = visits 
-                              |> Seq.map (fun keyValue -> keyValue.Value )      
-                              |> Seq.filter (fun visit -> visit.location = locationId)
+            let markArray = visitLocations.[locationId].Keys 
+                              |> Seq.map (fun key -> visits.[key])   
                               |> Seq.filter (filterByQueryAvg query)
             let avg = match markArray with
                       | seq when Seq.isEmpty seq -> 0.0
                       | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> (float)visit.mark), 5)
             return! json { avg = avg } httpContext
         }
-    else
+    | false, _ ->
         setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| httpContext
 
 let webApp = 
@@ -255,7 +281,7 @@ let webApp =
 // ---------------------------------
 
 let errorHandler (ex : Exception) (logger : ILogger) (ctx : HttpContext) =
-    logger.LogError(ex.Message)
+    logger.LogError(ex.ToString())
     setStatusCode 400 >=> text ex.Message <| ctx
 
 // ---------------------------------
@@ -273,21 +299,28 @@ let loadData folder =
     Directory.EnumerateFiles(folder, "locations_*.json")
         |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Locations>)
         |> Seq.collect (fun locationsObj -> locationsObj.locations)
-        |> Seq.map (fun loc -> locations.TryAdd(loc.id, loc)) 
+        |> Seq.map (fun loc -> 
+            locations.TryAdd(loc.id, loc) |> ignore
+            visitLocations.TryAdd(loc.id, ConcurrentDictionary<int,int>())|> ignore)
         |> Seq.toList
         |> ignore
     
     Directory.EnumerateFiles(folder, "users_*.json")
         |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Users>)
         |> Seq.collect (fun usersObj -> usersObj.users)
-        |> Seq.map (fun user -> users.TryAdd(user.id, user)) 
+        |> Seq.map (fun user -> 
+            users.TryAdd(user.id, user) |> ignore
+            visitUsers.TryAdd(user.id, ConcurrentDictionary<int,int>())|> ignore) 
         |> Seq.toList
         |> ignore
 
     Directory.EnumerateFiles(folder, "visits_*.json")
         |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Visits>)
         |> Seq.collect (fun visitObj -> visitObj.visits)
-        |> Seq.map (fun visit -> visits.TryAdd(visit.id, visit)) 
+        |> Seq.map (fun visit -> 
+            visits.TryAdd(visit.id, visit) |> ignore
+            visitLocations.[visit.location].TryAdd(visit.id, visit.id) |> ignore
+            visitUsers.[visit.user].TryAdd(visit.id, visit.id) |> ignore) 
         |> Seq.toList
         |> ignore
 

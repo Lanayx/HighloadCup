@@ -1,6 +1,8 @@
 namespace HCup.Models
 
 open System
+open System.Collections.Concurrent
+open Newtonsoft.Json
 
 [<CLIMutable>]
 type Location =
