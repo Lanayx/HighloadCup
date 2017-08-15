@@ -238,7 +238,7 @@ let filterByQueryAvg (query: QueryAvg) (visit: Visit) =
         && (query.toDate.IsNone || visit.visited_at < query.toDate.Value)
         && (query.gender.IsNone || user.Value.gender = query.gender.Value)
         && (query.toAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) <  query.toAge.Value)
-        && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) > query.fromAge.Value)
+        && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) >= query.fromAge.Value)
 
 let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) = 
     match locations.TryGetValue(locationId) with
