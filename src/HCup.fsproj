@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="1.1.*" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="1.1.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.*" />
-    <PackageReference Include="Giraffe" Version="0.1.0-alpha025" />
+    <PackageReference Include="Giraffe" Version="0.1.0-*" />
   </ItemGroup>
 
   <ItemGroup>

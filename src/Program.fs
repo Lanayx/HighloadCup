@@ -5,11 +5,13 @@ open System.IO
 open System.IO.Compression
 open System.Collections.Generic
 open System.Collections.Concurrent
+open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
 open Newtonsoft.Json
+open Giraffe.Tasks
 open Giraffe.HttpHandlers
 open Giraffe.Middleware
 open Giraffe.HttpContextExtensions
@@ -27,6 +29,7 @@ type VisitsCollection = ConcurrentDictionary<int, int>
 let visitLocations = new ConcurrentDictionary<int, VisitsCollection>()
 let visitUsers = new ConcurrentDictionary<int, VisitsCollection>()
 
+type UpdateEntity<'a> = 'a -> HttpContext -> Task<'a>
  
 let getEntity (collection: ConcurrentDictionary<int, 'a>) id httpContext = 
     match collection.TryGetValue id with
@@ -49,7 +52,7 @@ let isValidVisit (visit: Visit) =
 
 
 let updateLocation (location:Location) (httpContext: HttpContext) = 
-    async {
+    task {
         let! json = httpContext.ReadBodyFromRequest()
         if (json.Contains(": null"))
             then failwith "Null field"
@@ -68,7 +71,7 @@ let updateLocation (location:Location) (httpContext: HttpContext) =
     }
 
 let updateUser (user:User) (httpContext: HttpContext) = 
-    async {
+    task {
         let! json = httpContext.ReadBodyFromRequest()
         if (json.Contains(": null"))
             then failwith "Null field"
@@ -107,7 +110,7 @@ let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) =
 
 
 let updateVisit (oldVisit:Visit) (httpContext: HttpContext) = 
-    async {
+    task {
         let! json = httpContext.ReadBodyFromRequest()
         if (json.Contains(": null"))
             then failwith "Null field"
@@ -125,57 +128,57 @@ let updateVisit (oldVisit:Visit) (httpContext: HttpContext) =
         return updatedVisit 
     }
 
-let updateEntity (collection: ConcurrentDictionary<int, 'a>) updateFunc id (httpContext: HttpContext) = 
+let updateEntity (collection: ConcurrentDictionary<int, 'a>) (updateFunc: UpdateEntity<'a>)  id (next : HttpFunc) (httpContext: HttpContext) = 
     match collection.TryGetValue id with
     | true, entity -> 
-        async {
+        task {
             let! updatedEntity = updateFunc entity httpContext
             collection.[id] <- updatedEntity
-            return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext 
+            return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
         }
-    | _ -> setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| httpContext
+    | _ -> setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <| httpContext
 
-let addLocation (httpContext: HttpContext) = 
-    async {
+let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
+    task {
         let! value = httpContext.BindJson<Location>()
         if (isValidLocation value)
         then
             let result = match locations.TryAdd(value.id, value) with
-                         | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
-                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
+                         | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
+                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
             visitLocations.TryAdd(value.id, ConcurrentDictionary<int,int>()) |> ignore
             return! result
         else
-            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext    
+            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| next <| httpContext    
     }
 
-let addVisit (httpContext: HttpContext) = 
-    async {
+let addVisit (next : HttpFunc) (httpContext: HttpContext) = 
+    task {
         let! value = httpContext.BindJson<Visit>()
         if (isValidVisit value)
         then
             let result = match visits.TryAdd(value.id, value) with
-                         | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
-                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext
+                         | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
+                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext
             visitLocations.[value.location].TryAdd(value.id, value.id) |> ignore
             visitUsers.[value.user].TryAdd(value.id, value.id) |> ignore
             return! result      
         else
-            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext 
+            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| next <| httpContext 
     }
 
-let addUser (httpContext: HttpContext) = 
-    async {
+let addUser (next : HttpFunc) (httpContext: HttpContext) = 
+    task {
         let! value = httpContext.BindJson<User>()
         if (isValidUser value)
         then
             let result = match users.TryAdd(value.id, value) with
-                         | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| httpContext
-                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| httpContext 
+                         | true -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
+                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
             visitUsers.TryAdd(value.id, ConcurrentDictionary<int,int>()) |> ignore
-            return! result        
+            return! result         
         else
-            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| httpContext 
+            return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| next <| httpContext 
     }
 
 type UserVisit = { mark: uint8; visited_at: uint32; place: string }
@@ -194,11 +197,11 @@ let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
         && (query.toDistance.IsNone || location.Value.distance < query.toDistance.Value)
 
 
-let getUserVisits userId (httpContext: HttpContext) = 
+let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) = 
     match users.TryGetValue(userId) with
     | true, user ->
         let query = httpContext.BindQueryString<QueryVisit>()
-        async { 
+        task { 
             let usersVisits = visitUsers.[userId].Keys  
                               |> Seq.map (fun key -> visits.[key])   
                               |> Seq.filter (filterByQueryVisit query)
@@ -208,10 +211,10 @@ let getUserVisits userId (httpContext: HttpContext) =
                                                              place = locations.[visit.location].place
                                                          })
                               |> Seq.sortBy (fun v -> v.visited_at)
-            return! json { visits = usersVisits } httpContext
+            return! json { visits = usersVisits } next httpContext
         }
     | false, _ ->
-        setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| httpContext
+        setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <|  httpContext
 
 type Average = { avg: float }
 [<CLIMutable>]
@@ -237,21 +240,21 @@ let filterByQueryAvg (query: QueryAvg) (visit: Visit) =
         && (query.toAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) <  query.toAge.Value)
         && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) > query.fromAge.Value)
 
-let getAvgMark locationId (httpContext: HttpContext) = 
+let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) = 
     match locations.TryGetValue(locationId) with
     | true, location ->
         let query = httpContext.BindQueryString<QueryAvg>()
-        async {
+        task {
             let markArray = visitLocations.[locationId].Keys 
                               |> Seq.map (fun key -> visits.[key])   
                               |> Seq.filter (filterByQueryAvg query)
             let avg = match markArray with
                       | seq when Seq.isEmpty seq -> 0.0
                       | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> (float)visit.mark), 5)
-            return! json { avg = avg } httpContext
+            return! json { avg = avg } next httpContext
         }
     | false, _ ->
-        setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| httpContext
+        setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <| httpContext
 
 let webApp = 
     choose [
@@ -280,9 +283,9 @@ let webApp =
 // Error handler
 // ---------------------------------
 
-let errorHandler (ex : Exception) (logger : ILogger) (ctx : HttpContext) =
-    logger.LogError(ex.ToString())
-    setStatusCode 400 >=> text ex.Message <| ctx
+let errorHandler (ex : Exception) (logger : ILogger)=
+    logger.LogError(ex.Message)
+    setStatusCode 400 >=> text ex.Message
 
 // ---------------------------------
 // Config and Main
