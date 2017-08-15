@@ -10,7 +10,6 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
-open Microsoft.Extensions.Primitives
 open Newtonsoft.Json
 open Giraffe.Tasks
 open Giraffe.HttpHandlers
@@ -29,29 +28,13 @@ let visits = new ConcurrentDictionary<int, Visit>()
 type VisitsCollection = ConcurrentDictionary<int, int>
 let visitLocations = new ConcurrentDictionary<int, VisitsCollection>()
 let visitUsers = new ConcurrentDictionary<int, VisitsCollection>()
-let serializer = JsonSerializer()
 
 type UpdateEntity<'a> = 'a -> HttpContext -> Task<'a>
  
-let deserialize<'a> (httpContext: HttpContext) =
-    use sr = new StreamReader(httpContext.Request.Body)
-    use reader = new JsonTextReader(sr)
-    serializer.Deserialize<'a> reader
-
-let serialize<'a> (value: 'a) (next : HttpFunc) (httpContext: HttpContext) =
-    task {
-        httpContext.Response.Headers.["Content-Type" ] <- StringValues("application/json")
-        use sr = new StreamWriter(httpContext.Response.Body)
-        use writer = new JsonTextWriter(sr)
-        serializer.Serialize(writer, value)
-        do! writer.FlushAsync()
-        return! next httpContext
-    }
-
-let getEntity (collection: ConcurrentDictionary<int, 'a>) id httpFunc = 
+let getEntity (collection: ConcurrentDictionary<int, 'a>) id httpContext = 
     match collection.TryGetValue id with
-    | true, entity -> serialize entity httpFunc
-    | _ -> setStatusCode 404 httpFunc
+    | true, entity -> json entity httpContext
+    | _ -> setStatusCode 404 httpContext
 
 let isValidLocation (location: Location) =
     location.country.Length <=50 
@@ -157,7 +140,7 @@ let updateEntity (collection: ConcurrentDictionary<int, 'a>) (updateFunc: Update
 
 let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let value = deserialize httpContext
+        let! value = httpContext.BindJson<Location>()
         if (isValidLocation value)
         then
             let result = match locations.TryAdd(value.id, value) with
@@ -171,7 +154,7 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
 
 let addVisit (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let value = deserialize httpContext
+        let! value = httpContext.BindJson<Visit>()
         if (isValidVisit value)
         then
             let result = match visits.TryAdd(value.id, value) with
@@ -186,7 +169,7 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
 
 let addUser (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let value = deserialize httpContext
+        let! value = httpContext.BindJson<User>()
         if (isValidUser value)
         then
             let result = match users.TryAdd(value.id, value) with
@@ -228,7 +211,7 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
                                                              place = locations.[visit.location].place
                                                          })
                               |> Seq.sortBy (fun v -> v.visited_at)
-            return! serialize { visits = usersVisits } next httpContext
+            return! json { visits = usersVisits } next httpContext
         }
     | false, _ ->
         setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <|  httpContext
@@ -268,7 +251,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
             let avg = match markArray with
                       | seq when Seq.isEmpty seq -> 0.0
                       | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> (float)visit.mark), 5)
-            return! serialize { avg = avg } next httpContext
+            return! json { avg = avg } next httpContext
         }
     | false, _ ->
         setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <| httpContext
