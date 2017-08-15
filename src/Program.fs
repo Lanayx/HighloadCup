@@ -255,8 +255,8 @@ let webApp =
 // ---------------------------------
 
 let errorHandler (ex : Exception) (logger : ILogger) (ctx : HttpContext) =
-    logger.LogError(EventId(0), ex, "An unhandled exception has occurred while executing the request.")
-    ctx |> (clearResponse >=> setStatusCode 400 >=> text ex.Message)
+    logger.LogError(ex.Message)
+    setStatusCode 400 >=> text ex.Message <| ctx
 
 // ---------------------------------
 // Config and Main
