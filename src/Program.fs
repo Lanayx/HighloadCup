@@ -16,6 +16,7 @@ open Giraffe.HttpHandlers
 open Giraffe.Middleware
 open Giraffe.HttpContextExtensions
 open HCup.Models
+open HCup.RequestCounter
 
 // ---------------------------------
 // Web app
@@ -284,7 +285,7 @@ let webApp =
 // ---------------------------------
 
 let errorHandler (ex : Exception) (logger : ILogger)=
-    logger.LogError(ex.Message)
+    // logger.LogError(ex.Message)
     setStatusCode 400 >=> text ex.Message
 
 // ---------------------------------
@@ -292,6 +293,7 @@ let errorHandler (ex : Exception) (logger : ILogger)=
 // ---------------------------------
 
 let configureApp (app : IApplicationBuilder) = 
+    app.UseRequestCounter webApp
     app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
