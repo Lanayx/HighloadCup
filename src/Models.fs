@@ -5,6 +5,7 @@ open System.Collections.Concurrent
 open Newtonsoft.Json
 
 [<CLIMutable>]
+[<Struct>]
 type Location =
     {
         distance : uint16
@@ -15,6 +16,7 @@ type Location =
     }
 
 [<CLIMutable>]
+[<Struct>]
 type LocationUpd =
     {
         distance : Nullable<uint16>
@@ -24,16 +26,20 @@ type LocationUpd =
     }
 
 [<CLIMutable>]
+[<Struct>]
 type Locations =
     {
         locations : Location[]
     }
 
+
+[<Struct>]
 type Sex = 
     | m = 'm'
     | f = 'f'
 
 [<CLIMutable>]
+[<Struct>]
 type UserUpd =
     {
         first_name : string
@@ -44,6 +50,7 @@ type UserUpd =
     }
 
 [<CLIMutable>]
+[<Struct>]
 type User =
     {
         id: int32
@@ -55,12 +62,14 @@ type User =
     }
 
 [<CLIMutable>]
+[<Struct>]
 type Users =
     {
         users : User[]
     }
 
 [<CLIMutable>]
+[<Struct>]
 type VisitUpd =
     {
         user : Nullable<int32>
@@ -70,6 +79,7 @@ type VisitUpd =
     }
 
 [<CLIMutable>]
+[<Struct>]
 type Visit =
     {
         id: int32
@@ -80,6 +90,7 @@ type Visit =
     }
 
 [<CLIMutable>]
+[<Struct>]
 type Visits =
     {
         visits : Visit[]
