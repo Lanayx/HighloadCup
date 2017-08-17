@@ -17,6 +17,7 @@ open Giraffe.Middleware
 open Giraffe.HttpContextExtensions
 open HCup.Models
 open HCup.RequestCounter
+open ServiceStack.Text
 
 // ---------------------------------
 // Web app
@@ -27,7 +28,7 @@ let users = new ConcurrentDictionary<int, User>()
 let visits = new ConcurrentDictionary<int, Visit>()
 
 type SerializedCollection = string[]
-let locationsSerialized = Array.zeroCreate 90000
+let locationsSerialized = Array.zeroCreate 85000
 let usersSerialized = Array.zeroCreate 110000
 let visitsSerialized = Array.zeroCreate 1010000
 
@@ -37,10 +38,23 @@ let visitUsers = new ConcurrentDictionary<int, VisitsCollection>()
 
 type UpdateEntity<'a> = 'a -> HttpContext -> Task<'a>
  
+let serializeObject obj =
+    JsonSerializer.SerializeToString(obj)
+
+let deserializeObject<'a> str =
+    JsonSerializer.DeserializeFromString<'a>(str)
+
+let jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
+    json obj next httpContext
+
+
 let getEntity (serializedCollection: SerializedCollection) id next = 
-    match serializedCollection.[id] with
-    | null -> setStatusCode 404 next
-    | serializedEntity -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString serializedEntity <| next
+    if (id > serializedCollection.Length)
+    then setStatusCode 404 next
+    else
+        match serializedCollection.[id] with
+        | null -> setStatusCode 404 next
+        | serializedEntity -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString serializedEntity <| next
 
 let isValidLocation (location: Location) =
     location.country.Length <=50 
@@ -59,7 +73,7 @@ let updateLocation (oldLocation:Location) (httpContext: HttpContext) =
         let! json = httpContext.ReadBodyFromRequest()
         if (json.Contains(": null"))
             then failwith "Null field"
-        let newLocation = JsonConvert.DeserializeObject<LocationUpd>(json)
+        let newLocation = deserializeObject<LocationUpd>(json)
         let updatedLocation  = 
             { oldLocation with 
                 distance = if newLocation.distance.HasValue |> not then oldLocation.distance else newLocation.distance.Value 
@@ -78,7 +92,7 @@ let updateUser (oldUser:User) (httpContext: HttpContext) =
         let! json = httpContext.ReadBodyFromRequest()
         if (json.Contains(": null"))
             then failwith "Null field"
-        let newUser = JsonConvert.DeserializeObject<UserUpd>(json)
+        let newUser = deserializeObject<UserUpd>(json)
         let updatedUser  = 
             { oldUser with 
                 first_name = if newUser.first_name = null then oldUser.first_name else newUser.first_name
@@ -117,7 +131,7 @@ let updateVisit (oldVisit:Visit) (httpContext: HttpContext) =
         let! json = httpContext.ReadBodyFromRequest()
         if (json.Contains(": null"))
             then failwith "Null field"
-        let newVisit = JsonConvert.DeserializeObject<VisitUpd>(json)
+        let newVisit = deserializeObject<VisitUpd>(json)
         let updatedVisit  = 
             { oldVisit with 
                 user = getNewUserValue oldVisit newVisit
@@ -138,7 +152,7 @@ let updateEntity (collection: ConcurrentDictionary<int, 'a>) (serializedCollecti
         task {
             let! updatedEntity = updateFunc entity httpContext
             collection.[id] <- updatedEntity
-            serializedCollection.[id] <- JsonConvert.SerializeObject(updatedEntity)
+            serializedCollection.[id] <- serializeObject(updatedEntity)
             return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
         }
     | _ -> setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <| httpContext
@@ -146,7 +160,7 @@ let updateEntity (collection: ConcurrentDictionary<int, 'a>) (serializedCollecti
 let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()
-        let location = JsonConvert.DeserializeObject<Location>(stringValue)
+        let location = deserializeObject<Location>(stringValue)
         if (isValidLocation location)
         then
             let result = match locations.TryAdd(location.id, location) with
@@ -163,7 +177,7 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
 let addVisit (next : HttpFunc) (httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()
-        let visit = JsonConvert.DeserializeObject<Visit>(stringValue)
+        let visit = deserializeObject<Visit>(stringValue)
         if (isValidVisit visit)
         then
             let result = match visits.TryAdd(visit.id, visit) with
@@ -181,7 +195,7 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
 let addUser (next : HttpFunc) (httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()
-        let user = JsonConvert.DeserializeObject<User>(stringValue)
+        let user = deserializeObject<User>(stringValue)
         if (isValidUser user)
         then
             let result = match users.TryAdd(user.id, user) with
@@ -225,7 +239,7 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
                                                              place = locations.[visit.location].place
                                                          })
                               |> Seq.sortBy (fun v -> v.visited_at)
-            return! json { visits = usersVisits } next httpContext
+            return! jsonCustom { visits = usersVisits } next httpContext
         }
     | false, _ ->
         setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <|  httpContext
@@ -265,7 +279,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
             let avg = match marks with
                       | seq when Seq.isEmpty seq -> 0.0
                       | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> (float)visit.mark), 5)
-            return! json { avg = avg } next httpContext
+            return! jsonCustom { avg = avg } next httpContext
         }
     | false, _ ->
         setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <| httpContext
@@ -313,12 +327,12 @@ let configureApp (app : IApplicationBuilder) =
 let loadData folder =
     try
         Directory.EnumerateFiles(folder, "locations_*.json")
-            |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Locations>)
+            |> Seq.map (File.ReadAllText >> deserializeObject<Locations>)
             |> Seq.collect (fun locationsObj -> locationsObj.locations)
             |> Seq.map (fun location -> 
                 locations.TryAdd(location.id, location) |> ignore
                 visitLocations.TryAdd(location.id, ConcurrentDictionary<int,int>())|> ignore
-                locationsSerialized.[location.id] <- JsonConvert.SerializeObject(location)) 
+                locationsSerialized.[location.id] <- serializeObject(location)) 
             |> Seq.toList
             |> ignore
     with 
@@ -326,23 +340,23 @@ let loadData folder =
 
     
     Directory.EnumerateFiles(folder, "users_*.json")
-        |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Users>)
+        |> Seq.map (File.ReadAllText >> deserializeObject<Users>)
         |> Seq.collect (fun usersObj -> usersObj.users)
         |> Seq.map (fun user -> 
             users.TryAdd(user.id, user) |> ignore
             visitUsers.TryAdd(user.id, ConcurrentDictionary<int,int>())|> ignore 
-            usersSerialized.[user.id] <- JsonConvert.SerializeObject(user))
+            usersSerialized.[user.id] <- serializeObject(user))
         |> Seq.toList
         |> ignore
 
     Directory.EnumerateFiles(folder, "visits_*.json")
-        |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Visits>)
+        |> Seq.map (File.ReadAllText >> deserializeObject<Visits>)
         |> Seq.collect (fun visitObj -> visitObj.visits)
         |> Seq.map (fun visit -> 
             visits.TryAdd(visit.id, visit) |> ignore
             visitLocations.[visit.location].TryAdd(visit.id, visit.id) |> ignore
             visitUsers.[visit.user].TryAdd(visit.id, visit.id) |> ignore
-            visitsSerialized.[visit.id] <- JsonConvert.SerializeObject(visit)) 
+            visitsSerialized.[visit.id] <- serializeObject(visit)) 
         |> Seq.toList
         |> ignore
 
