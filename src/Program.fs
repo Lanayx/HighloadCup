@@ -26,10 +26,10 @@ let locations = new ConcurrentDictionary<int, Location>()
 let users = new ConcurrentDictionary<int, User>()
 let visits = new ConcurrentDictionary<int, Visit>()
 
-type SerializedCollection = ConcurrentDictionary<int, string>
-let locationsSerialized = new SerializedCollection()
-let usersSerialized = new SerializedCollection()
-let visitsSerialized = new SerializedCollection()
+type SerializedCollection = string[]
+let locationsSerialized = Array.zeroCreate 90000
+let usersSerialized = Array.zeroCreate 110000
+let visitsSerialized = Array.zeroCreate 1010000
 
 type VisitsCollection = ConcurrentDictionary<int, int>
 let visitLocations = new ConcurrentDictionary<int, VisitsCollection>()
@@ -38,9 +38,9 @@ let visitUsers = new ConcurrentDictionary<int, VisitsCollection>()
 type UpdateEntity<'a> = 'a -> HttpContext -> Task<'a>
  
 let getEntity (serializedCollection: SerializedCollection) id next = 
-    match serializedCollection.TryGetValue id with
-    | true, serializedEntity -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString serializedEntity <| next
-    | _ -> setStatusCode 404 next
+    match serializedCollection.[id] with
+    | null -> setStatusCode 404 next
+    | serializedEntity -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString serializedEntity <| next
 
 let isValidLocation (location: Location) =
     location.country.Length <=50 
@@ -152,7 +152,7 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
             let result = match locations.TryAdd(location.id, location) with
                          | true -> 
                                    visitLocations.TryAdd(location.id, ConcurrentDictionary<int,int>()) |> ignore
-                                   locationsSerialized.TryAdd(location.id, stringValue) |> ignore
+                                   locationsSerialized.[location.id] <- stringValue
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
             return! result
@@ -168,7 +168,7 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
         then
             let result = match visits.TryAdd(visit.id, visit) with
                          | true -> 
-                                   visitsSerialized.TryAdd(visit.id, stringValue) |> ignore
+                                   visitsSerialized.[visit.id] <- stringValue
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext
             visitLocations.[visit.location].TryAdd(visit.id, visit.id) |> ignore
@@ -187,7 +187,7 @@ let addUser (next : HttpFunc) (httpContext: HttpContext) =
             let result = match users.TryAdd(user.id, user) with
                          | true ->
                                    visitUsers.TryAdd(user.id, ConcurrentDictionary<int,int>()) |> ignore
-                                   usersSerialized.TryAdd(user.id, stringValue) |> ignore
+                                   usersSerialized.[user.id] <- stringValue
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
             return! result         
@@ -311,15 +311,19 @@ let configureApp (app : IApplicationBuilder) =
     app.UseGiraffe webApp
 
 let loadData folder =
-    Directory.EnumerateFiles(folder, "locations_*.json")
-        |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Locations>)
-        |> Seq.collect (fun locationsObj -> locationsObj.locations)
-        |> Seq.map (fun location -> 
-            locations.TryAdd(location.id, location) |> ignore
-            visitLocations.TryAdd(location.id, ConcurrentDictionary<int,int>())|> ignore
-            locationsSerialized.TryAdd(location.id, JsonConvert.SerializeObject(location)) |> ignore) 
-        |> Seq.toList
-        |> ignore
+    try
+        Directory.EnumerateFiles(folder, "locations_*.json")
+            |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Locations>)
+            |> Seq.collect (fun locationsObj -> locationsObj.locations)
+            |> Seq.map (fun location -> 
+                locations.TryAdd(location.id, location) |> ignore
+                visitLocations.TryAdd(location.id, ConcurrentDictionary<int,int>())|> ignore
+                locationsSerialized.[location.id] <- JsonConvert.SerializeObject(location)) 
+            |> Seq.toList
+            |> ignore
+    with 
+    | ex -> Console.WriteLine("Loc failed {0}", ex)
+
     
     Directory.EnumerateFiles(folder, "users_*.json")
         |> Seq.map (File.ReadAllText >> JsonConvert.DeserializeObject<Users>)
@@ -327,7 +331,7 @@ let loadData folder =
         |> Seq.map (fun user -> 
             users.TryAdd(user.id, user) |> ignore
             visitUsers.TryAdd(user.id, ConcurrentDictionary<int,int>())|> ignore 
-            usersSerialized.TryAdd(user.id, JsonConvert.SerializeObject(user)) |> ignore)
+            usersSerialized.[user.id] <- JsonConvert.SerializeObject(user))
         |> Seq.toList
         |> ignore
 
@@ -338,7 +342,7 @@ let loadData folder =
             visits.TryAdd(visit.id, visit) |> ignore
             visitLocations.[visit.location].TryAdd(visit.id, visit.id) |> ignore
             visitUsers.[visit.user].TryAdd(visit.id, visit.id) |> ignore
-            visitsSerialized.TryAdd(visit.id, JsonConvert.SerializeObject(visit)) |> ignore) 
+            visitsSerialized.[visit.id] <- JsonConvert.SerializeObject(visit)) 
         |> Seq.toList
         |> ignore
 
