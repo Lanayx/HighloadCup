@@ -198,10 +198,10 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
                          | null -> 
                                    visits.[visit.id] <- visit
                                    visitsSerialized.[visit.id] <- stringValue
+                                   visitLocations.[visit.location].TryAdd(visit.id, visit.id) |> ignore
+                                   visitUsers.[visit.user].TryAdd(visit.id, visit.id) |> ignore
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext
-            visitLocations.[visit.location].TryAdd(visit.id, visit.id) |> ignore
-            visitUsers.[visit.user].TryAdd(visit.id, visit.id) |> ignore
             return! result      
         else
             return! setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| next <| httpContext 
