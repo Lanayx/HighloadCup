@@ -29,7 +29,7 @@ type RequestCounterMiddleware (next : RequestDelegate,
             Interlocked.Increment(outstandingRequestCount)
             |> (fun reqCount -> if (reqCount % 1000 = 0)
                                 then
-                                    Console.Write(("Result {0} {1} {2}; Threads {3}"),
+                                    Console.WriteLine(("Result {0} {1} {2}; Threads {3}"),
                                         reqCount,
                                         (DateTime.Now - start).TotalMilliseconds,
                                         DateTime.Now.ToString("HH:mm:ss.ffff"),
