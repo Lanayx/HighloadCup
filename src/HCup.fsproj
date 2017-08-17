@@ -23,6 +23,7 @@
   <ItemGroup>
     <Compile Include="Models.fs" />
     <Compile Include="RequestCounter.fs" />
+    <Compile Include="Actors.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>

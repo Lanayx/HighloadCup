@@ -15,9 +15,10 @@ open Giraffe.Tasks
 open Giraffe.HttpHandlers
 open Giraffe.Middleware
 open Giraffe.HttpContextExtensions
+open ServiceStack.Text
 open HCup.Models
 open HCup.RequestCounter
-open ServiceStack.Text
+open HCup.Actors
 
 // ---------------------------------
 // Web app
@@ -39,7 +40,7 @@ let locationsSerialized = Array.zeroCreate LocationsSize
 let usersSerialized = Array.zeroCreate UsersSize
 let visitsSerialized = Array.zeroCreate VisitsSize
 
-type VisitsCollection = ConcurrentDictionary<int, int>
+type VisitsCollection = ResizeArray<int>
 let visitLocations = Array.zeroCreate<VisitsCollection> LocationsSize
 let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 
@@ -120,17 +121,17 @@ let updateUser (oldUser:User) (httpContext: HttpContext) =
 let getNewUserValue (oldValue: Visit) (newValue: VisitUpd) = 
     if (newValue.user.HasValue)
     then 
-        visitUsers.[oldValue.user].TryRemove(oldValue.id) |> ignore
-        visitUsers.[newValue.user.Value].TryAdd(oldValue.id, oldValue.id) |> ignore
+        VisitActor.RemoveVisit visitUsers.[oldValue.user] oldValue.id
+        VisitActor.AddVisit visitUsers.[newValue.user.Value] oldValue.id
         newValue.user.Value
     else 
         oldValue.user
 
 let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) = 
     if (newValue.location.HasValue)
-    then 
-        visitLocations.[oldValue.location].TryRemove(oldValue.id) |> ignore
-        visitLocations.[newValue.location.Value].TryAdd(oldValue.id, oldValue.id) |> ignore
+    then         
+        VisitActor.RemoveVisit visitLocations.[oldValue.location] oldValue.id
+        VisitActor.AddVisit visitLocations.[newValue.location.Value] oldValue.id
         newValue.location.Value
     else 
         oldValue.location
@@ -179,7 +180,7 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
             let result = match box locations.[location.id] with
                          | null -> 
                                    locations.[location.id] <- location
-                                   visitLocations.[location.id] <- ConcurrentDictionary<int,int>()
+                                   visitLocations.[location.id] <- ResizeArray<int>()
                                    locationsSerialized.[location.id] <- stringValue
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
@@ -197,9 +198,9 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
             let result = match box visits.[visit.id] with
                          | null -> 
                                    visits.[visit.id] <- visit
-                                   visitsSerialized.[visit.id] <- stringValue
-                                   visitLocations.[visit.location].TryAdd(visit.id, visit.id) |> ignore
-                                   visitUsers.[visit.user].TryAdd(visit.id, visit.id) |> ignore
+                                   visitsSerialized.[visit.id] <- stringValue                                   
+                                   VisitActor.AddVisit visitLocations.[visit.location] visit.id                         
+                                   VisitActor.AddVisit visitUsers.[visit.user] visit.id
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext
             return! result      
@@ -216,7 +217,7 @@ let addUser (next : HttpFunc) (httpContext: HttpContext) =
             let result = match box users.[user.id] with
                          | null ->
                                    users.[user.id] <- user
-                                   visitUsers.[user.id] <- ConcurrentDictionary<int,int>()
+                                   visitUsers.[user.id] <- ResizeArray<int>()
                                    usersSerialized.[user.id] <- stringValue
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
@@ -251,7 +252,7 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
         | user ->
             let query = httpContext.BindQueryString<QueryVisit>()
             task { 
-                let usersVisits = visitUsers.[userId].Keys  
+                let usersVisits = visitUsers.[userId] 
                                   |> Seq.map (fun key -> visits.[key])   
                                   |> Seq.filter (filterByQueryVisit query)
                                   |> Seq.map (fun visit -> {
@@ -297,7 +298,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
         | location ->
             let query = httpContext.BindQueryString<QueryAvg>()
             task {
-                let marks = visitLocations.[locationId].Keys 
+                let marks = visitLocations.[locationId] 
                                   |> Seq.map (fun key -> visits.[key])   
                                   |> Seq.filter (filterByQueryAvg query)
                 let avg = match marks with
@@ -353,7 +354,7 @@ let loadData folder =
             |> Seq.collect (fun locationsObj -> locationsObj.locations)
             |> Seq.map (fun location -> 
                 locations.[location.id] <- location
-                visitLocations.[location.id] <- ConcurrentDictionary<int,int>()
+                visitLocations.[location.id] <- ResizeArray<int>()
                 locationsSerialized.[location.id] <- serializeObject(location)) 
             |> Seq.toList
             |> ignore
@@ -366,7 +367,7 @@ let loadData folder =
         |> Seq.collect (fun usersObj -> usersObj.users)
         |> Seq.map (fun user -> 
             users.[user.id] <- user
-            visitUsers.[user.id] <- ConcurrentDictionary<int,int>()
+            visitUsers.[user.id] <- ResizeArray<int>()
             usersSerialized.[user.id] <- serializeObject(user))
         |> Seq.toList
         |> ignore
@@ -376,8 +377,8 @@ let loadData folder =
         |> Seq.collect (fun visitObj -> visitObj.visits)
         |> Seq.map (fun visit -> 
             visits.[visit.id] <- visit
-            visitLocations.[visit.location].TryAdd(visit.id, visit.id) |> ignore
-            visitUsers.[visit.user].TryAdd(visit.id, visit.id) |> ignore
+            visitLocations.[visit.location].Add(visit.id) |> ignore
+            visitUsers.[visit.user].Add(visit.id) |> ignore
             visitsSerialized.[visit.id] <- serializeObject(visit)) 
         |> Seq.toList
         |> ignore
