@@ -29,15 +29,11 @@ type RequestCounterMiddleware (next : RequestDelegate,
             Interlocked.Increment(outstandingRequestCount)
             |> (fun reqCount -> if (reqCount % 1000 = 0)
                                 then
-                                    Console.Write(("Result {0} {1} {2}; Total Processes {3}"),
+                                    Console.Write(("Result {0} {1} {2}; Threads {3}"),
                                         reqCount,
                                         (DateTime.Now - start).TotalMilliseconds,
                                         DateTime.Now.ToString("HH:mm:ss.ffff"),
-                                        Process.GetProcesses().Length)
-                                    let proc = Process.GetCurrentProcess();
-                                    let mem = (float)proc.WorkingSet64;
-                                    let cpu = proc.TotalProcessorTime;
-                                    Console.WriteLine(" My process used working set {0:n3} K of working set and CPU {1:n} msec", mem / 1024.0, cpu.TotalMilliseconds))
+                                        Process.GetCurrentProcess().Threads.Count))
 
 
 
