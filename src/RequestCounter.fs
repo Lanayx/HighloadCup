@@ -6,8 +6,8 @@ open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
-open Giraffe.HttpHandlers
-open Giraffe.Tasks
+open Juraff.HttpHandlers
+open Juraff.Tasks
 
 let outstandingRequestCount = ref 0
 
