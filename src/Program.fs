@@ -9,7 +9,11 @@ open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
+<<<<<<< HEAD
 open Microsoft.AspNetCore.Server.Kestrel
+=======
+open Microsoft.AspNetCore.Server.Kestrel.Core
+>>>>>>> 96d1b86... Updated dockerfile to .net core 2.0
 open Microsoft.Extensions.Logging
 open Newtonsoft.Json
 open Juraff.Tasks
@@ -348,9 +352,14 @@ let configureApp (app : IApplicationBuilder) =
     app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
+<<<<<<< HEAD
 let configureKestrel (options : KestrelServerOptions) =
     Console.WriteLine("IO threads before: {0}", options.ThreadCount)
     options.ThreadCount <- options.ThreadCount * 2
+=======
+let configureKestrel (options : KestrelServerOptions) = 
+    options.AllowSynchronousIO <- true
+>>>>>>> 96d1b86... Updated dockerfile to .net core 2.0
 
 let loadData folder =
     try
