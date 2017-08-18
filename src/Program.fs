@@ -350,7 +350,7 @@ let configureApp (app : IApplicationBuilder) =
 
 let configureKestrel (options : KestrelServerOptions) =
     Console.WriteLine("IO threads before: {0}", options.ThreadCount)
-    options.ThreadCount <- 10
+    options.ThreadCount <- options.ThreadCount * 2
 
 let loadData folder =
     try
