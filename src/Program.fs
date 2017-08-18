@@ -9,6 +9,7 @@ open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Server.Kestrel
 open Microsoft.Extensions.Logging
 open Newtonsoft.Json
 open Giraffe.Tasks
@@ -347,6 +348,10 @@ let configureApp (app : IApplicationBuilder) =
     app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
+let configureKestrel (options : KestrelServerOptions) =
+    Console.WriteLine("IO threads before: {0}", options.ThreadCount)
+    options.ThreadCount <- 10
+
 let loadData folder =
     try
         Directory.EnumerateFiles(folder, "locations_*.json")
@@ -396,7 +401,7 @@ let main argv =
     loadData "./data"
 
     WebHostBuilder()
-        .UseKestrel()
+        .UseKestrel(Action<KestrelServerOptions> configureKestrel)
         .Configure(Action<IApplicationBuilder> configureApp)
         .Build()
         .Run()
