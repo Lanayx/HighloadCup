@@ -352,14 +352,9 @@ let configureApp (app : IApplicationBuilder) =
     app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
-<<<<<<< HEAD
 let configureKestrel (options : KestrelServerOptions) =
     Console.WriteLine("IO threads before: {0}", options.ThreadCount)
     options.ThreadCount <- options.ThreadCount * 2
-=======
-let configureKestrel (options : KestrelServerOptions) = 
-    options.AllowSynchronousIO <- true
->>>>>>> 96d1b86... Updated dockerfile to .net core 2.0
 
 let loadData folder =
     try
