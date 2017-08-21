@@ -27,12 +27,16 @@ type RequestCounterMiddleware (next : RequestDelegate,
             let start = DateTime.Now
             let! result = next.Invoke ctx
             Interlocked.Increment(outstandingRequestCount)
-            |> (fun reqCount -> if (reqCount % 1000 = 0)
+            |> (fun reqCount -> 
+                                if (reqCount = 18090 || reqCount = 30090)
+                                then GC.Collect(1)
+                                if (reqCount % 1000 = 0)
                                 then
+                                    let endTime = DateTime.Now
                                     Console.Write(("Result {0} {1} {2}; Threads {3}; "),
                                         reqCount,
-                                        (DateTime.Now - start).TotalMilliseconds,
-                                        DateTime.Now.ToString("HH:mm:ss.ffff"),
+                                        (endTime - start).TotalMilliseconds,
+                                        endTime.ToString("HH:mm:ss.ffff"),
                                         Process.GetCurrentProcess().Threads.Count)
                                     Console.WriteLine("Gen0={0} Gen1={1} Gen2={2}",
                                         GC.CollectionCount(0),
