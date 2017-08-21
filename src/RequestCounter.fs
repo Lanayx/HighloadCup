@@ -29,11 +29,15 @@ type RequestCounterMiddleware (next : RequestDelegate,
             Interlocked.Increment(outstandingRequestCount)
             |> (fun reqCount -> if (reqCount % 1000 = 0)
                                 then
-                                    Console.WriteLine(("Result {0} {1} {2}; Threads {3}"),
+                                    Console.Write(("Result {0} {1} {2}; Threads {3}; "),
                                         reqCount,
                                         (DateTime.Now - start).TotalMilliseconds,
                                         DateTime.Now.ToString("HH:mm:ss.ffff"),
-                                        Process.GetCurrentProcess().Threads.Count))
+                                        Process.GetCurrentProcess().Threads.Count)
+                                    Console.WriteLine("Gen0={0} Gen1={1} Gen2={2}",
+                                        GC.CollectionCount(0),
+                                        GC.CollectionCount(1),
+                                        GC.CollectionCount(2)))
 
 
 
