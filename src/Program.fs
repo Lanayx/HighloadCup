@@ -21,6 +21,7 @@ open ServiceStack.Text
 open HCup.Models
 open HCup.RequestCounter
 open HCup.Actors
+open HCup.Router
 
 // ---------------------------------
 // Web app

@@ -4,10 +4,10 @@ module HCup.Router
 open Microsoft.AspNetCore.Http
 open System.Collections.Generic
 open System
-open Giraffe.Tasks
-open Giraffe.HttpHandlers
-open Giraffe.FormatExpressions
-open Giraffe.Common
+open Juraff.Tasks
+open Juraff.HttpHandlers
+open Juraff.FormatExpressions
+open Juraff.Common
 
 
 type IdHandler = int -> HttpFunc -> HttpContext -> HttpFuncResult
