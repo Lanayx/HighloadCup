@@ -24,6 +24,7 @@
     <Compile Include="Models.fs" />
     <Compile Include="RequestCounter.fs" />
     <Compile Include="Actors.fs" />
+    <Compile Include="Router.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 </Project>

@@ -19,6 +19,7 @@ open ServiceStack.Text
 open HCup.Models
 open HCup.RequestCounter
 open HCup.Actors
+open HCup.Router
 
 // ---------------------------------
 // Web app
@@ -307,26 +308,32 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                 return! jsonCustom { avg = avg } next httpContext
             }
 
+let getActionsDictionary = Dictionary<string, IdHandler>()
+getActionsDictionary.Add("/locations/%i", getEntity locationsSerialized)
+getActionsDictionary.Add("/users/%i", getEntity usersSerialized)
+getActionsDictionary.Add("/visits/%i", getEntity visitsSerialized)
+getActionsDictionary.Add("/users/%i/visits", getUserVisits)
+getActionsDictionary.Add("/locations/%i/avg", getAvgMark)
+
+let postActionsDictionary = Dictionary<string, IdHandler>()
+postActionsDictionary.Add("/locations/%i", updateEntity locations locationsSerialized updateLocation)
+postActionsDictionary.Add("/users/%i", updateEntity users usersSerialized updateUser)
+postActionsDictionary.Add("/visits/%i", updateEntity visits visitsSerialized updateVisit)
+
+
 let webApp = 
     choose [
         GET >=>
             choose [
-                routef "/locations/%i" <| getEntity locationsSerialized
-                routef "/users/%i" <| getEntity usersSerialized
-                routef "/visits/%i" <| getEntity visitsSerialized
-                
-                routef "/users/%i/visits" getUserVisits
-                routef "/locations/%i/avg" getAvgMark
+                customRoutef getActionsDictionary
             ]
         POST >=>
             choose [
-                routef "/locations/%i" <| updateEntity locations locationsSerialized updateLocation
-                routef "/users/%i" <| updateEntity users usersSerialized updateUser
-                routef "/visits/%i" <| updateEntity visits visitsSerialized updateVisit
-
                 route "/locations/new" >=> addLocation
                 route "/users/new" >=> addUser
                 route "/visits/new" >=> addVisit
+
+                customRoutef postActionsDictionary
             ]
         setStatusCode 404 >=> text "Not Found" ]
 
