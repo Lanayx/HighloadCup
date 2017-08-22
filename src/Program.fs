@@ -10,6 +10,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Server.Kestrel.Core
+open Microsoft.AspNetCore.Server.Kestrel.Transport
 open Microsoft.Extensions.Logging
 open Newtonsoft.Json
 open Juraff.Tasks
@@ -26,11 +27,13 @@ open HCup.Actors
 // ---------------------------------
 
 [<Literal>]
-let LocationsSize = 90000
+let LocationsSize = 80000
 [<Literal>]
-let UsersSize = 110000
+let UsersSize = 105000
 [<Literal>]
-let VisitsSize = 1010000
+let VisitsSize = 1005000
+
+let currentDate = DateTime.Now
 
 let locations = Array.zeroCreate<Location> LocationsSize
 let users = Array.zeroCreate<User> UsersSize
@@ -286,8 +289,8 @@ let filterByQueryAvg (query: QueryAvg) (visit: Visit) =
     (query.fromDate.IsNone || visit.visited_at > query.fromDate.Value)
         && (query.toDate.IsNone || visit.visited_at < query.toDate.Value)
         && (query.gender.IsNone || user.Value.gender = query.gender.Value)
-        && (query.toAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) <  query.toAge.Value)
-        && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) DateTime.Now ) >= query.fromAge.Value)
+        && (query.toAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) currentDate ) <  query.toAge.Value)
+        && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) currentDate ) >= query.fromAge.Value)
 
 let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) = 
     if (locationId > locations.Length)
@@ -349,45 +352,42 @@ let configureApp (app : IApplicationBuilder) =
     app.UseGiraffe webApp
 
 let configureKestrel (options : KestrelServerOptions) =
-    options.ListenUnixSocket "/tmp/tkestrel.sock"
+    // options.ListenUnixSocket "/tmp/tkestrel.sock"
+    options.ApplicationSchedulingMode <- Abstractions.Internal.SchedulingMode.Inline
 
 let loadData folder =
-    try
-        Directory.EnumerateFiles(folder, "locations_*.json")
-            |> Seq.map (File.ReadAllText >> deserializeObject<Locations>)
-            |> Seq.collect (fun locationsObj -> locationsObj.locations)
-            |> Seq.map (fun location -> 
-                locations.[location.id] <- location
-                visitLocations.[location.id] <- ResizeArray<int>()
-                locationsSerialized.[location.id] <- serializeObject(location)) 
-            |> Seq.toList
-            |> ignore
-    with 
-    | ex -> Console.WriteLine("Loc failed {0}", ex)
 
+    let locations = Directory.EnumerateFiles(folder, "locations_*.json")
+                    |> Seq.map (File.ReadAllText >> deserializeObject<Locations>)
+                    |> Seq.collect (fun locationsObj -> locationsObj.locations)
+                    |> Seq.map (fun location -> 
+                        locations.[location.id] <- location
+                        visitLocations.[location.id] <- ResizeArray<int>()
+                        locationsSerialized.[location.id] <- serializeObject(location)) 
+                    |> Seq.toList
+    Console.Write("Locations {0} ", locations.Length)
     
-    Directory.EnumerateFiles(folder, "users_*.json")
-        |> Seq.map (File.ReadAllText >> deserializeObject<Users>)
-        |> Seq.collect (fun usersObj -> usersObj.users)
-        |> Seq.map (fun user -> 
-            users.[user.id] <- user
-            visitUsers.[user.id] <- ResizeArray<int>()
-            usersSerialized.[user.id] <- serializeObject(user))
-        |> Seq.toList
-        |> ignore
+    let users = Directory.EnumerateFiles(folder, "users_*.json")
+                |> Seq.map (File.ReadAllText >> deserializeObject<Users>)
+                |> Seq.collect (fun usersObj -> usersObj.users)
+                |> Seq.map (fun user -> 
+                    users.[user.id] <- user
+                    visitUsers.[user.id] <- ResizeArray<int>()
+                    usersSerialized.[user.id] <- serializeObject(user))
+                |> Seq.toList
+    Console.Write("Users {0} ", users.Length)
 
-    Directory.EnumerateFiles(folder, "visits_*.json")
-        |> Seq.map (File.ReadAllText >> deserializeObject<Visits>)
-        |> Seq.collect (fun visitObj -> visitObj.visits)
-        |> Seq.map (fun visit -> 
-            visits.[visit.id] <- visit
-            visitLocations.[visit.location].Add(visit.id) |> ignore
-            visitUsers.[visit.user].Add(visit.id) |> ignore
-            visitsSerialized.[visit.id] <- serializeObject(visit)) 
-        |> Seq.toList
-        |> ignore
+    let visits = Directory.EnumerateFiles(folder, "visits_*.json")
+                |> Seq.map (File.ReadAllText >> deserializeObject<Visits>)
+                |> Seq.collect (fun visitObj -> visitObj.visits)
+                |> Seq.map (fun visit -> 
+                    visits.[visit.id] <- visit
+                    visitLocations.[visit.location].Add(visit.id) |> ignore
+                    visitUsers.[visit.user].Add(visit.id) |> ignore
+                    visitsSerialized.[visit.id] <- serializeObject(visit)) 
+                |> Seq.toList
 
-    Console.WriteLine("Locations: {0}, Users: {1}, Visits: {2}", locations.Length, users.Length, visits.Length)
+    Console.WriteLine("Visits: {0}", visits.Length)
 
 [<EntryPoint>]
 let main argv =
@@ -398,9 +398,11 @@ let main argv =
     then ZipFile.ExtractToDirectory("/tmp/data/data.zip","./data")
     else ZipFile.ExtractToDirectory("data.zip","./data")
     loadData "./data"
+    GC.Collect(2)
 
     WebHostBuilder()
         .UseKestrel(Action<KestrelServerOptions> configureKestrel)
+        // .UseUrls("http://0.0.0.0:80")
         .Configure(Action<IApplicationBuilder> configureApp)
         .Build()
         .Run()

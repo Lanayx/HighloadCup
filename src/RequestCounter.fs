@@ -24,19 +24,16 @@ type RequestCounterMiddleware (next : RequestDelegate,
 
     member __.Invoke (ctx : HttpContext) =
         task {
-            let start = DateTime.Now
             let! result = next.Invoke ctx
             Interlocked.Increment(outstandingRequestCount)
             |> (fun reqCount -> 
-                                if (reqCount = 18090 || reqCount = 30090)
+                                if (reqCount = 18089 || reqCount = 30089)
                                 then GC.Collect(1)
                                 if (reqCount % 1000 = 0)
                                 then
-                                    let endTime = DateTime.Now
-                                    Console.Write(("Result {0} {1} {2}; Threads {3}; "),
+                                    Console.Write(("Result {0} {1}; Threads {2}; "),
                                         reqCount,
-                                        (endTime - start).TotalMilliseconds,
-                                        endTime.ToString("HH:mm:ss.ffff"),
+                                        DateTime.Now.ToString("HH:mm:ss.ffff"),
                                         Process.GetCurrentProcess().Threads.Count)
                                     Console.WriteLine("Gen0={0} Gen1={1} Gen2={2}",
                                         GC.CollectionCount(0),
