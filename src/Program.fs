@@ -126,8 +126,8 @@ let updateUser (oldUser:User) (httpContext: HttpContext) =
 let getNewUserValue (oldValue: Visit) (newValue: VisitUpd) = 
     if (newValue.user.HasValue)
     then 
-        VisitActor.RemoveVisit visitUsers.[oldValue.user] oldValue.id
-        VisitActor.AddVisit visitUsers.[newValue.user.Value] oldValue.id
+        VisitActor.RemoveUserVisit visitUsers.[oldValue.user] oldValue.id
+        VisitActor.AddUserVisit visitUsers.[newValue.user.Value] oldValue.id
         newValue.user.Value
     else 
         oldValue.user
@@ -135,8 +135,8 @@ let getNewUserValue (oldValue: Visit) (newValue: VisitUpd) =
 let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) = 
     if (newValue.location.HasValue)
     then         
-        VisitActor.RemoveVisit visitLocations.[oldValue.location] oldValue.id
-        VisitActor.AddVisit visitLocations.[newValue.location.Value] oldValue.id
+        VisitActor.RemoveLocationVisit visitLocations.[oldValue.location] oldValue.id
+        VisitActor.AddLocationVisit visitLocations.[newValue.location.Value] oldValue.id
         newValue.location.Value
     else 
         oldValue.location
@@ -204,8 +204,8 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
                          | null -> 
                                    visits.[visit.id] <- visit
                                    visitsSerialized.[visit.id] <- stringValue                                   
-                                   VisitActor.AddVisit visitLocations.[visit.location] visit.id                         
-                                   VisitActor.AddVisit visitUsers.[visit.user] visit.id
+                                   VisitActor.AddLocationVisit visitLocations.[visit.location] visit.id                         
+                                   VisitActor.AddUserVisit visitUsers.[visit.user] visit.id
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext
             return! result      
