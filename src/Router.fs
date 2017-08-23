@@ -31,23 +31,31 @@ let (|IsLocation|_|) (path: PathString) =
    then Some(remaining)
    else None
 
+
+let tryParseId stringId path (dictIdHandler: IdHandlers) next ctx =
+   match Int32.TryParse(stringId) with
+   | true, value -> dictIdHandler.[path] value next ctx
+   | false, value -> setStatusCode 404 next ctx
+
 let customRoutef (dictIdHandler: IdHandlers) : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) ->
         let remaining = ref PathString.Empty
         match ctx.Request.Path with
-        | IsVisit path ->  dictIdHandler.["/visits/%i"] (Int32.Parse(path.Value.Value.Substring(1))) next ctx
+        | IsVisit path -> tryParseId (path.Value.Value.Substring(1)) "/visits/%i" dictIdHandler next ctx
         | IsUser path -> 
             let pathString = path.Value.Value.Substring(1)
             if (pathString.EndsWith("/visits"))
             then
                 let slashIndex = pathString.IndexOf("/") 
-                dictIdHandler.["/users/%i/visits"] (Int32.Parse(pathString.Substring(0,slashIndex))) next ctx
-            else dictIdHandler.["/users/%i"] (Int32.Parse(pathString)) next ctx
+                tryParseId (pathString.Substring(0,slashIndex)) "/users/%i/visits" dictIdHandler next ctx
+            else 
+                tryParseId pathString "/users/%i" dictIdHandler next ctx
         | IsLocation path ->         
             let pathString = path.Value.Value.Substring(1)
             if (pathString.EndsWith("/avg"))
             then
                 let slashIndex = pathString.IndexOf("/") 
-                dictIdHandler.["/locations/%i/avg"] (Int32.Parse(pathString.Substring(0,slashIndex))) next ctx
-            else dictIdHandler.["/locations/%i"] (Int32.Parse(pathString)) next ctx
+                tryParseId (pathString.Substring(0,slashIndex)) "/locations/%i/avg" dictIdHandler next ctx
+            else 
+                tryParseId pathString "/locations/%i" dictIdHandler next ctx
         | _-> shortCircuit
