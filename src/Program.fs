@@ -346,8 +346,8 @@ let webApp =
 // ---------------------------------
 
 let errorHandler (ex : Exception) (logger : ILogger)=
-    // logger.LogError(ex.Message)
-    setStatusCode 400 >=> text ex.Message
+    // logger.LogError(ex.ToString())
+    setStatusCode 400
 
 // ---------------------------------
 // Config and Main
