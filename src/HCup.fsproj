@@ -7,6 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Juraff/Tasks.fs" />
+    <Compile Include="Juraff/Common.fs" />
+    <Compile Include="Juraff/ComputationExpressions.fs" />
+    <Compile Include="Juraff/FormatExpressions.fs" />
+    <Compile Include="Juraff/HttpContextExtensions.fs" />
+    <Compile Include="Juraff/XmlViewEngine.fs" />
+    <Compile Include="Juraff/HttpHandlers.fs" />
+    <Compile Include="Juraff/Middleware.fs" />
+
+
     <Compile Include="Models.fs" />
     <Compile Include="RequestCounter.fs" />
     <Compile Include="Actors.fs" />
@@ -17,9 +27,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
     <PackageReference Include="ServiceStack.Text.Core" Version="1.0.43" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="Juraff\Juraff.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="2.0.0" />
