@@ -2,7 +2,7 @@ namespace HCup.Actors
 
 open System.Collections.Generic
 
-type VisitsCollection = HashSet<int>
+type VisitsCollection = ResizeArray<int>
 
 type Action =
     | AddVisit
