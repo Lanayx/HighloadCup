@@ -45,7 +45,6 @@ let locationsSerialized = Array.zeroCreate LocationsSize
 let usersSerialized = Array.zeroCreate UsersSize
 let visitsSerialized = Array.zeroCreate VisitsSize
 
-type VisitsCollection = ResizeArray<int>
 let visitLocations = Array.zeroCreate<VisitsCollection> LocationsSize
 let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 
@@ -185,7 +184,7 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
             let result = match box locations.[location.id] with
                          | null -> 
                                    locations.[location.id] <- location
-                                   visitLocations.[location.id] <- ResizeArray<int>()
+                                   visitLocations.[location.id] <- VisitsCollection()
                                    locationsSerialized.[location.id] <- stringValue
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
@@ -222,7 +221,7 @@ let addUser (next : HttpFunc) (httpContext: HttpContext) =
             let result = match box users.[user.id] with
                          | null ->
                                    users.[user.id] <- user
-                                   visitUsers.[user.id] <- ResizeArray<int>()
+                                   visitUsers.[user.id] <- VisitsCollection()
                                    usersSerialized.[user.id] <- stringValue
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
@@ -369,7 +368,7 @@ let loadData folder =
                     |> Seq.collect (fun locationsObj -> locationsObj.locations)
                     |> Seq.map (fun location -> 
                         locations.[location.id] <- location
-                        visitLocations.[location.id] <- ResizeArray<int>()
+                        visitLocations.[location.id] <- VisitsCollection()
                         locationsSerialized.[location.id] <- serializeObject(location)) 
                     |> Seq.toList
     Console.Write("Locations {0} ", locations.Length)
@@ -379,7 +378,7 @@ let loadData folder =
                 |> Seq.collect (fun usersObj -> usersObj.users)
                 |> Seq.map (fun user -> 
                     users.[user.id] <- user
-                    visitUsers.[user.id] <- ResizeArray<int>()
+                    visitUsers.[user.id] <- VisitsCollection()
                     usersSerialized.[user.id] <- serializeObject(user))
                 |> Seq.toList
     Console.Write("Users {0} ", users.Length)

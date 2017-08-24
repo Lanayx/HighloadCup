@@ -1,15 +1,19 @@
 namespace HCup.Actors
 
+open System.Collections.Generic
+
+type VisitsCollection = HashSet<int>
+
 type Action =
     | AddVisit
     | RemoveVisit
 
 type VisitActor () = 
 
-    static let addVisitInternal (collection: ResizeArray<int>) (visitId: int) = 
-        collection.Add(visitId)
+    static let addVisitInternal (collection: VisitsCollection) (visitId: int) = 
+        collection.Add(visitId) |> ignore
 
-    static let removeVisitInternal (collection: ResizeArray<int>) (visitId: int) = 
+    static let removeVisitInternal (collection: VisitsCollection) (visitId: int) = 
         collection.Remove(visitId) |> ignore
 
     static let getActor() = 
@@ -38,14 +42,14 @@ type VisitActor () =
     static let locationAgent = getActor()
 
     // public interface to hide the implementation
-    static member AddUserVisit (collection: ResizeArray<int>) (visitId: int) = 
+    static member AddUserVisit (collection: VisitsCollection) (visitId: int) = 
         userAgent.Post (Action.AddVisit, collection, visitId)
 
-    static member RemoveUserVisit (collection: ResizeArray<int>) (visitId: int) = 
+    static member RemoveUserVisit (collection: VisitsCollection) (visitId: int) = 
         userAgent.Post (Action.RemoveVisit, collection, visitId)
     
-    static member AddLocationVisit (collection: ResizeArray<int>) (visitId: int) = 
+    static member AddLocationVisit (collection: VisitsCollection) (visitId: int) = 
         locationAgent.Post (Action.AddVisit, collection, visitId)
 
-    static member RemoveLocationVisit (collection: ResizeArray<int>) (visitId: int) = 
+    static member RemoveLocationVisit (collection: VisitsCollection) (visitId: int) = 
         locationAgent.Post (Action.RemoveVisit, collection, visitId)
