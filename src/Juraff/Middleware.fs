@@ -28,7 +28,7 @@ type GiraffeMiddleware (next          : RequestDelegate,
                         handler       : HttpHandler,
                         loggerFactory : ILoggerFactory) =
 
-    do if isNull next then raise (ArgumentNullException("next"))
+    // do if isNull next then raise (ArgumentNullException("next"))
 
     // pre-compile the handler pipeline
     let func : HttpFunc = handler (Some >> Task.FromResult)
@@ -36,13 +36,13 @@ type GiraffeMiddleware (next          : RequestDelegate,
     member __.Invoke (ctx : HttpContext) =
         task {
             let! result = func ctx
-            let  logger = loggerFactory.CreateLogger<GiraffeMiddleware>()
+            // let  logger = loggerFactory.CreateLogger<GiraffeMiddleware>()
 
-            if logger.IsEnabled LogLevel.Debug then
-                match result with
-                | Some _ -> sprintf "Giraffe returned Some for %s" (getRequestInfo ctx)
-                | None   -> sprintf "Giraffe returned None for %s" (getRequestInfo ctx)
-                |> logger.LogDebug
+            // if logger.IsEnabled LogLevel.Debug then
+            //     match result with
+            //     | Some _ -> sprintf "Giraffe returned Some for %s" (getRequestInfo ctx)
+            //     | None   -> sprintf "Giraffe returned None for %s" (getRequestInfo ctx)
+            //     |> logger.LogDebug
 
             if (result.IsNone) then
                 return! next.Invoke ctx

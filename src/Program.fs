@@ -235,19 +235,30 @@ let addUser (next : HttpFunc) (httpContext: HttpContext) =
 
 type UserVisit = { mark: uint8; visited_at: uint32; place: string }
 type UserVisits = { visits: seq<UserVisit> }
-[<CLIMutable>]
-type QueryVisit = { fromDate: uint32 option; toDate: uint32 option; country: string; toDistance: uint16 option}
+[<Struct>]
+type QueryVisit = { fromDate: Nullable<uint32>; toDate: Nullable<uint32>; country: string; toDistance: Nullable<uint16>}
+
+let getUserVisitsQuery (httpContext: HttpContext) =
+    let fromDate = HCup.Parser.queryNullableParse "fromDate" UInt32.TryParse httpContext    
+    let toDate = HCup.Parser.queryNullableParse "toDate" UInt32.TryParse httpContext
+    let country = HCup.Parser.queryStringParse "country" httpContext
+    let toDistance = HCup.Parser.queryNullableParse "toDistance" UInt16.TryParse httpContext
+    {
+        fromDate = fromDate
+        toDate = toDate
+        country = country
+        toDistance = toDistance
+    }    
 
 let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
     let location = 
-        if (String.IsNullOrEmpty(query.country) |> not || query.toDistance.IsSome)
+        if (String.IsNullOrEmpty(query.country) |> not || query.toDistance.HasValue)
         then Some locations.[visit.location]
         else None
-    (query.fromDate.IsNone || visit.visited_at > query.fromDate.Value)
-        && (query.toDate.IsNone || visit.visited_at < query.toDate.Value)
+    (query.fromDate.HasValue |> not || visit.visited_at > query.fromDate.Value)
+        && (query.toDate.HasValue |> not || visit.visited_at < query.toDate.Value)
         && (String.IsNullOrEmpty(query.country) || location.Value.country = query.country)
-        && (query.toDistance.IsNone || location.Value.distance < query.toDistance.Value)
-
+        && (query.toDistance.HasValue |> not || location.Value.distance < query.toDistance.Value)
 
 let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) = 
     if (userId > users.Length)
@@ -255,9 +266,9 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
     else
         match box users.[userId] with        
         | null ->
-            setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <|  httpContext
+            setStatusCode 404 next httpContext
         | user ->
-            let query = httpContext.BindQueryString<QueryVisit>()
+            let query = getUserVisitsQuery httpContext
             task { 
                 let usersVisits = visitUsers.[userId] 
                                   |> Seq.map (fun key -> visits.[key])   
@@ -356,8 +367,8 @@ let errorHandler (ex : Exception) (logger : ILogger)=
 // ---------------------------------
 
 let configureApp (app : IApplicationBuilder) = 
-    app.UseRequestCounter webApp
-    app.UseGiraffeErrorHandler errorHandler
+    // app.UseRequestCounter webApp
+    // app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
 let configureKestrel (options : KestrelServerOptions) =
