@@ -76,16 +76,19 @@ let getEntity (serializedCollection: SerializedCollection) id next =
         | serializedEntity -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString serializedEntity <| next
 
 let isValidLocation (location: Location) =
-    location.country.Length <=50 
+    location.id > 0
+    && location.country.Length <=50 
     && location.city.Length <=50
 
 let isValidUser (user: User) =
-    user.email.Length <= 100 
+    user.id > 0
+    && user.email.Length <= 100 
     && user.first_name.Length <=50 
     && user.last_name.Length <=50 
 
 let isValidVisit (visit: Visit) =
-    visit.mark <= 5uy 
+    visit.id > 0
+    && visit.mark <= 5uy 
 
 let updateLocation (oldLocation:Location) (httpContext: HttpContext) = 
     task {
@@ -178,7 +181,7 @@ let updateEntity (collection: 'a[]) (serializedCollection: SerializedCollection)
 let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
     task {
         let! stringValue = getStringFromRequest httpContext       
-        let location = deserializeObject<Location>(stringValue)
+        let location = deserializeObject<Location>(stringValue)   
         if (isValidLocation location)
         then
             let result = match box locations.[location.id] with
@@ -196,7 +199,7 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
 let addVisit (next : HttpFunc) (httpContext: HttpContext) = 
     task {
         let! stringValue = getStringFromRequest httpContext
-        let visit = deserializeObject<Visit>(stringValue)
+        let visit = deserializeObject<Visit>(stringValue)  
         if (isValidVisit visit)
         then
             let result = match box visits.[visit.id] with
@@ -215,7 +218,7 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
 let addUser (next : HttpFunc) (httpContext: HttpContext) = 
     task {
         let! stringValue = getStringFromRequest httpContext
-        let user = deserializeObject<User>(stringValue)
+        let user = deserializeObject<User>(stringValue)    
         if (isValidUser user)
         then
             let result = match box users.[user.id] with
