@@ -4,21 +4,30 @@ open System
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Primitives
 
-let bind m f =
+[<Struct>]
+type ParseResult<'a> =
+    | Success of 'a
+    | Empty
+    | Error
+
+let bind m f negativeValue =
     match m with
     | true, x -> 
         x |> f
     | x -> 
-        System.Nullable()
+        negativeValue
 
-let toNullable parseFun value = 
-    bind (parseFun value) (fun x -> Nullable(x))
+let toParseResult parseFun value = 
+    bind (parseFun value) ParseResult.Success ParseResult.Error
 
 let toString parseFun (strv: StringValues) = 
-    strv.Item 0 |> (toNullable parseFun)
+    strv.Item 0 |> (toParseResult parseFun)
 
-let queryNullableParse paramName parseFun (httpContext: HttpContext) =
-    bind (httpContext.Request.Query.TryGetValue(paramName)) (toString parseFun)
+let queryNullableParse prevResult paramName parseFun (httpContext: HttpContext) =
+    match prevResult with
+    | Error -> Error
+    | _ ->
+        bind (httpContext.Request.Query.TryGetValue(paramName)) (toString parseFun) ParseResult.Empty
 
 let queryStringParse paramName (httpContext: HttpContext) =
     match httpContext.Request.Query.TryGetValue(paramName) with

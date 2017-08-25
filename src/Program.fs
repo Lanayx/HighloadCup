@@ -22,6 +22,7 @@ open HCup.Models
 open HCup.RequestCounter
 open HCup.Actors
 open HCup.Router
+open HCup.Parser
 
 // ---------------------------------
 // Web app
@@ -235,30 +236,37 @@ let addUser (next : HttpFunc) (httpContext: HttpContext) =
 
 type UserVisit = { mark: uint8; visited_at: uint32; place: string }
 type UserVisits = { visits: seq<UserVisit> }
-[<Struct>]
-type QueryVisit = { fromDate: Nullable<uint32>; toDate: Nullable<uint32>; country: string; toDistance: Nullable<uint16>}
+type QueryVisit = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; country: string; toDistance: ParseResult<uint16>}
 
 let getUserVisitsQuery (httpContext: HttpContext) =
-    let fromDate = HCup.Parser.queryNullableParse "fromDate" UInt32.TryParse httpContext    
-    let toDate = HCup.Parser.queryNullableParse "toDate" UInt32.TryParse httpContext
-    let country = HCup.Parser.queryStringParse "country" httpContext
-    let toDistance = HCup.Parser.queryNullableParse "toDistance" UInt16.TryParse httpContext
-    {
-        fromDate = fromDate
-        toDate = toDate
-        country = country
-        toDistance = toDistance
-    }    
+    let fromDate = queryNullableParse ParseResult.Empty "fromDate" UInt32.TryParse httpContext    
+    let toDate = queryNullableParse fromDate "toDate" UInt32.TryParse httpContext
+    let toDistance = queryNullableParse toDate "toDistance" UInt16.TryParse httpContext
+    match toDistance with
+    | Error -> None
+    | _ ->
+            let country = queryStringParse "country" httpContext
+            Some {
+                fromDate = fromDate
+                toDate = toDate
+                country = country
+                toDistance = toDistance
+            }    
+
+let checkParseResult result f =
+    match result with
+    | Success a -> a |> f
+    | _ -> true
 
 let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
     let location = 
-        if (String.IsNullOrEmpty(query.country) |> not || query.toDistance.HasValue)
+        if (String.IsNullOrEmpty(query.country) |> not || query.toDistance <> ParseResult.Empty)
         then Some locations.[visit.location]
         else None
-    (query.fromDate.HasValue |> not || visit.visited_at > query.fromDate.Value)
-        && (query.toDate.HasValue |> not || visit.visited_at < query.toDate.Value)
+    checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
+        && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
+        && (checkParseResult query.toDistance (fun toDistance -> location.Value.distance < toDistance))
         && (String.IsNullOrEmpty(query.country) || location.Value.country = query.country)
-        && (query.toDistance.HasValue |> not || location.Value.distance < query.toDistance.Value)
 
 let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) = 
     if (userId > users.Length)
@@ -268,19 +276,21 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
         | null ->
             setStatusCode 404 next httpContext
         | user ->
-            let query = getUserVisitsQuery httpContext
-            task { 
-                let usersVisits = visitUsers.[userId] 
-                                  |> Seq.map (fun key -> visits.[key])   
-                                  |> Seq.filter (filterByQueryVisit query)
-                                  |> Seq.map (fun visit -> {
-                                                                 mark = visit.mark
-                                                                 visited_at = visit.visited_at
-                                                                 place = locations.[visit.location].place
-                                                             })
-                                  |> Seq.sortBy (fun v -> v.visited_at)
-                return! jsonCustom { visits = usersVisits } next httpContext
-            }
+            match getUserVisitsQuery httpContext with
+            | Some query ->
+                task { 
+                    let usersVisits = visitUsers.[userId] 
+                                      |> Seq.map (fun key -> visits.[key])   
+                                      |> Seq.filter (filterByQueryVisit query)
+                                      |> Seq.map (fun visit -> {
+                                                                     mark = visit.mark
+                                                                     visited_at = visit.visited_at
+                                                                     place = locations.[visit.location].place
+                                                                 })
+                                      |> Seq.sortBy (fun v -> v.visited_at)
+                    return! jsonCustom { visits = usersVisits } next httpContext
+                }
+            | None -> setStatusCode 400 next httpContext
 
 type Average = { avg: float }
 [<CLIMutable>]
