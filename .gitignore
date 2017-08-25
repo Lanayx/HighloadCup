@@ -3,4 +3,5 @@ packages/
 bin/
 obj/
 artifacts/
-src/data
+src/data/
+src/data.zip

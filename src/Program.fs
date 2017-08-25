@@ -28,11 +28,11 @@ open HCup.Parser
 // ---------------------------------
 
 [<Literal>]
-let LocationsSize = 80000
+let LocationsSize = 800000
 [<Literal>]
-let UsersSize = 105000
+let UsersSize = 1050000
 [<Literal>]
-let VisitsSize = 1005000
+let VisitsSize = 10050000
 
 let currentDate = DateTime.Now
 let timestampBase = DateTime(1970, 1, 1, 0, 0, 0, 0)
