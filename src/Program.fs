@@ -36,6 +36,7 @@ let UsersSize = 105000
 let VisitsSize = 1005000
 
 let currentDate = DateTime.Now
+let timestampBase = DateTime(1970, 1, 1, 0, 0, 0, 0)
 
 let locations = Array.zeroCreate<Location> LocationsSize
 let users = Array.zeroCreate<User> UsersSize
@@ -251,12 +252,7 @@ let getUserVisitsQuery (httpContext: HttpContext) =
                 toDate = toDate
                 country = country
                 toDistance = toDistance
-            }    
-
-let checkParseResult result f =
-    match result with
-    | Success a -> a |> f
-    | _ -> true
+            }  
 
 let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
     let location = 
@@ -293,28 +289,43 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
             | None -> setStatusCode 400 next httpContext
 
 type Average = { avg: float }
-[<CLIMutable>]
-type QueryAvg = { fromDate: uint32 option; toDate: uint32 option; fromAge: int option; toAge: int option; gender: Sex option}
+type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<Sex>}
+
+let getAvgMarkQuery (httpContext: HttpContext) =
+    let fromDate = queryNullableParse ParseResult.Empty "fromDate" UInt32.TryParse httpContext    
+    let toDate = queryNullableParse fromDate "toDate" UInt32.TryParse httpContext   
+    let fromAge = queryNullableParse toDate "fromAge" Int32.TryParse httpContext
+    let toAge = queryNullableParse fromAge "toAge" Int32.TryParse httpContext
+    let gender = queryNullableParse toAge "gender" Sex.TryParse httpContext
+    match gender with
+    | Error -> None
+    | _ ->
+            Some {
+                fromDate = fromDate
+                toDate = toDate
+                fromAge = fromAge
+                toAge = toAge
+                gender = gender
+            }  
 
 let convertToDate timestamp =
-    (DateTime(1970, 1, 1, 0, 0, 0, 0)).AddSeconds(timestamp)
+    timestampBase.AddSeconds(timestamp)
 
 let diffYears (startDate: DateTime) (endDate: DateTime) =
     (endDate.Year - startDate.Year - 1) + (if ((endDate.Month > startDate.Month) || ((endDate.Month = startDate.Month) && (endDate.Day >= startDate.Day))) then 1 else 0)
 
 
 let filterByQueryAvg (query: QueryAvg) (visit: Visit) =
-
     let user = 
-        if (query.gender.IsSome || query.fromAge.IsSome || query.toAge.IsSome)
+        if (query.gender <> ParseResult.Empty || query.fromAge <> ParseResult.Empty || query.toAge <> ParseResult.Empty)
         then Some users.[visit.user]
         else None
 
-    (query.fromDate.IsNone || visit.visited_at > query.fromDate.Value)
-        && (query.toDate.IsNone || visit.visited_at < query.toDate.Value)
-        && (query.gender.IsNone || user.Value.gender = query.gender.Value)
-        && (query.toAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) currentDate ) <  query.toAge.Value)
-        && (query.fromAge.IsNone || (diffYears ((float) user.Value.birth_date |> convertToDate) currentDate ) >= query.fromAge.Value)
+    checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
+        && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
+        && (checkParseResult query.gender (fun gender -> user.Value.gender = gender))
+        && (checkParseResult query.toAge (fun toAge -> (diffYears ((float) user.Value.birth_date |> convertToDate) currentDate ) <  toAge))
+        && (checkParseResult query.fromAge (fun fromAge -> (diffYears ((float) user.Value.birth_date |> convertToDate) currentDate ) >= fromAge))
 
 let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) = 
     if (locationId > locations.Length)
@@ -322,18 +333,20 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
     else
         match box locations.[locationId] with
         | null ->
-            setStatusCode 404 >=> setBodyAsString "Value doesn't exist" <| next <| httpContext
+            setStatusCode 404 <| next <| httpContext
         | location ->
-            let query = httpContext.BindQueryString<QueryAvg>()
-            task {
-                let marks = visitLocations.[locationId] 
-                                  |> Seq.map (fun key -> visits.[key])   
-                                  |> Seq.filter (filterByQueryAvg query)
-                let avg = match marks with
-                          | seq when Seq.isEmpty seq -> 0.0
-                          | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> (float)visit.mark), 5)
-                return! jsonCustom { avg = avg } next httpContext
-            }
+            match getAvgMarkQuery httpContext with
+            | Some query ->
+                task {
+                    let marks = visitLocations.[locationId] 
+                                      |> Seq.map (fun key -> visits.[key])   
+                                      |> Seq.filter (filterByQueryAvg query)
+                    let avg = match marks with
+                              | seq when Seq.isEmpty seq -> 0.0
+                              | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> (float)visit.mark), 5)
+                    return! jsonCustom { avg = avg } next httpContext
+                }
+            | None -> setStatusCode 400 next httpContext
 
 let getActionsDictionary = Dictionary<string, IdHandler>()
 getActionsDictionary.Add("/locations/%i", getEntity locationsSerialized)
