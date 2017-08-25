@@ -12,7 +12,6 @@ open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.AspNetCore.Server.Kestrel.Transport
 open Microsoft.Extensions.Logging
-open Newtonsoft.Json
 open Juraff.Tasks
 open Juraff.HttpHandlers
 open Juraff.Middleware
@@ -59,7 +58,7 @@ let deserializeObject<'a> str =
     JsonSerializer.DeserializeFromString<'a>(str)
 
 let jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
-    json obj next httpContext
+    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeObject obj) <| next <| httpContext
 
 let getStringFromRequest (httpContext: HttpContext) = 
     task {
