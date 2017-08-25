@@ -389,8 +389,8 @@ let errorHandler (ex : Exception) (logger : ILogger)=
 // ---------------------------------
 
 let configureApp (app : IApplicationBuilder) = 
-    // app.UseRequestCounter webApp
-    // app.UseGiraffeErrorHandler errorHandler
+    app.UseRequestCounter webApp
+    app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
 let configureKestrel (options : KestrelServerOptions) =
