@@ -32,8 +32,8 @@ type Locations =
 
 [<Struct>]
 type Sex = 
-    | m = 'm'
-    | f = 'f'
+    | m = 0
+    | f = 1
 
 [<CLIMutable>]
 type UserUpd =

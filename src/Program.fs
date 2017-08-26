@@ -16,7 +16,8 @@ open Juraff.Tasks
 open Juraff.HttpHandlers
 open Juraff.Middleware
 open Juraff.HttpContextExtensions
-open ServiceStack.Text
+// open ServiceStack.Text
+open Jil
 open HCup.Models
 open HCup.RequestCounter
 open HCup.Actors
@@ -34,7 +35,7 @@ let UsersSize = 1050000
 [<Literal>]
 let VisitsSize = 10050000
 
-let currentDate = DateTime.Now
+let mutable currentDate = DateTime.Now
 let timestampBase = DateTime(1970, 1, 1, 0, 0, 0, 0)
 
 let locations = Array.zeroCreate<Location> LocationsSize
@@ -47,10 +48,10 @@ let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 type UpdateEntity<'a> = 'a -> HttpContext -> Task<'a>
  
 let serializeObject obj =
-    JsonSerializer.SerializeToString(obj)
+    JSON.Serialize(obj)
 
-let deserializeObject<'a> str =
-    JsonSerializer.DeserializeFromString<'a>(str)
+let deserializeObject<'a> (str: string) =
+    JSON.Deserialize<'a>(str)
 
 let jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeObject obj) <| next <| httpContext
@@ -416,8 +417,15 @@ let loadData folder =
                     visitLocations.[visit.location].Add(visit.id) |> ignore
                     visitUsers.[visit.user].Add(visit.id) |> ignore) 
                 |> Seq.toList
-
     Console.WriteLine("Visits: {0}", visits.Length)
+
+    let str = Path.Combine(folder,"options.txt") 
+                   |> File.ReadAllLines
+    currentDate <- str.[0]
+                   |> Int64.Parse
+                   |> float
+                   |> convertToDate
+
 
 [<EntryPoint>]
 let main argv =
@@ -425,7 +433,9 @@ let main argv =
     then Directory.Delete("./data",true)
     Directory.CreateDirectory("./data") |> ignore
     if File.Exists("/tmp/data/data.zip")
-    then ZipFile.ExtractToDirectory("/tmp/data/data.zip","./data")
+    then
+        File.Copy("/tmp/data/options.txt","./data/options.txt") 
+        ZipFile.ExtractToDirectory("/tmp/data/data.zip","./data")
     else ZipFile.ExtractToDirectory("data.zip","./data")
     loadData "./data"
     GC.Collect(2)

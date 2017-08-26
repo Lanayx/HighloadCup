@@ -3,7 +3,7 @@
 
 warmup () {
     sleep 55
-    curl -s -o /dev/null http://127.0.0.1/users/8
+    curl -s http://127.0.0.1/users/8
     curl -s -o /dev/null http://127.0.0.1/visits/8
     curl -s -o /dev/null http://127.0.0.1/locations/8
     curl -s -o /dev/null http://127.0.0.1/locations/8/avg?gender=f&fromDate=971568000&fromAge=27
