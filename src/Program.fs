@@ -41,11 +41,6 @@ let locations = Array.zeroCreate<Location> LocationsSize
 let users = Array.zeroCreate<User> UsersSize
 let visits = Array.zeroCreate<Visit> VisitsSize
 
-type SerializedCollection = string[]
-let locationsSerialized = Array.zeroCreate LocationsSize
-let usersSerialized = Array.zeroCreate UsersSize
-let visitsSerialized = Array.zeroCreate VisitsSize
-
 let visitLocations = Array.zeroCreate<VisitsCollection> LocationsSize
 let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 
@@ -68,13 +63,13 @@ let getStringFromRequest (httpContext: HttpContext) =
         return stringValue
     }
 
-let getEntity (serializedCollection: SerializedCollection) id next = 
-    if (id > serializedCollection.Length)
+let getEntity (collection: 'a[]) id next = 
+    if (id > collection.Length)
     then setStatusCode 404 next
     else
-        match serializedCollection.[id] with
+        match box collection.[id] with
         | null -> setStatusCode 404 next
-        | serializedEntity -> setHttpHeader "Content-Type" "application/json" >=> setBodyAsString serializedEntity <| next
+        | entity -> jsonCustom entity next
 
 let isValidLocation (location: Location) =
     location.id > 0
@@ -129,8 +124,8 @@ let updateUser (oldUser:User) (httpContext: HttpContext) =
 let getNewUserValue (oldValue: Visit) (newValue: VisitUpd) = 
     if (newValue.user.HasValue)
     then 
-        VisitActor.RemoveUserVisit visitUsers.[oldValue.user] oldValue.id
-        VisitActor.AddUserVisit visitUsers.[newValue.user.Value] oldValue.id
+        VisitActor.RemoveUserVisit oldValue.user visitUsers.[oldValue.user] oldValue.id
+        VisitActor.AddUserVisit newValue.user.Value visitUsers.[newValue.user.Value] oldValue.id
         newValue.user.Value
     else 
         oldValue.user
@@ -138,8 +133,8 @@ let getNewUserValue (oldValue: Visit) (newValue: VisitUpd) =
 let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) = 
     if (newValue.location.HasValue)
     then         
-        VisitActor.RemoveLocationVisit visitLocations.[oldValue.location] oldValue.id
-        VisitActor.AddLocationVisit visitLocations.[newValue.location.Value] oldValue.id
+        VisitActor.RemoveLocationVisit oldValue.location visitLocations.[oldValue.location] oldValue.id
+        VisitActor.AddLocationVisit newValue.location.Value visitLocations.[newValue.location.Value] oldValue.id
         newValue.location.Value
     else 
         oldValue.location
@@ -162,9 +157,9 @@ let updateVisit (oldVisit:Visit) (httpContext: HttpContext) =
         return updatedVisit 
     }
 
-let updateEntity (collection: 'a[]) (serializedCollection: SerializedCollection) 
+let updateEntity (collection: 'a[])
                  (updateFunc: UpdateEntity<'a>) (id: int) (next : HttpFunc) (httpContext: HttpContext) =
-    if (id > serializedCollection.Length)
+    if (id > collection.Length)
     then setStatusCode 404 next httpContext
     else
         let oldEntity = collection.[id]
@@ -175,7 +170,6 @@ let updateEntity (collection: 'a[]) (serializedCollection: SerializedCollection)
             task {
                 let! updatedEntity = updateFunc oldEntity httpContext
                 collection.[id] <- updatedEntity
-                serializedCollection.[id] <- serializeObject(updatedEntity)
                 return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
             }
 
@@ -189,7 +183,6 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
                          | null -> 
                                    locations.[location.id] <- location
                                    visitLocations.[location.id] <- VisitsCollection()
-                                   locationsSerialized.[location.id] <- stringValue
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
             return! result
@@ -205,10 +198,9 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
         then
             let result = match box visits.[visit.id] with
                          | null -> 
-                                   visits.[visit.id] <- visit
-                                   visitsSerialized.[visit.id] <- stringValue                                   
-                                   VisitActor.AddLocationVisit visitLocations.[visit.location] visit.id                         
-                                   VisitActor.AddUserVisit visitUsers.[visit.user] visit.id
+                                   visits.[visit.id] <- visit                                
+                                   VisitActor.AddLocationVisit visit.location visitLocations.[visit.location] visit.id                         
+                                   VisitActor.AddUserVisit visit.user visitUsers.[visit.user] visit.id
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext
             return! result      
@@ -226,7 +218,6 @@ let addUser (next : HttpFunc) (httpContext: HttpContext) =
                          | null ->
                                    users.[user.id] <- user
                                    visitUsers.[user.id] <- VisitsCollection()
-                                   usersSerialized.[user.id] <- stringValue
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                          | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
             return! result         
@@ -348,16 +339,16 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
             | None -> setStatusCode 400 next httpContext
 
 let getActionsDictionary = Dictionary<string, IdHandler>()
-getActionsDictionary.Add("/locations/%i", getEntity locationsSerialized)
-getActionsDictionary.Add("/users/%i", getEntity usersSerialized)
-getActionsDictionary.Add("/visits/%i", getEntity visitsSerialized)
+getActionsDictionary.Add("/locations/%i", getEntity locations)
+getActionsDictionary.Add("/users/%i", getEntity users)
+getActionsDictionary.Add("/visits/%i", getEntity visits)
 getActionsDictionary.Add("/users/%i/visits", getUserVisits)
 getActionsDictionary.Add("/locations/%i/avg", getAvgMark)
 
 let postActionsDictionary = Dictionary<string, IdHandler>()
-postActionsDictionary.Add("/locations/%i", updateEntity locations locationsSerialized updateLocation)
-postActionsDictionary.Add("/users/%i", updateEntity users usersSerialized updateUser)
-postActionsDictionary.Add("/visits/%i", updateEntity visits visitsSerialized updateVisit)
+postActionsDictionary.Add("/locations/%i", updateEntity locations updateLocation)
+postActionsDictionary.Add("/users/%i", updateEntity users updateUser)
+postActionsDictionary.Add("/visits/%i", updateEntity visits updateVisit)
 
 
 let webApp = 
@@ -404,8 +395,7 @@ let loadData folder =
                     |> Seq.collect (fun locationsObj -> locationsObj.locations)
                     |> Seq.map (fun location -> 
                         locations.[location.id] <- location
-                        visitLocations.[location.id] <- VisitsCollection()
-                        locationsSerialized.[location.id] <- serializeObject(location)) 
+                        visitLocations.[location.id] <- VisitsCollection()) 
                     |> Seq.toList
     Console.Write("Locations {0} ", locations.Length)
     
@@ -414,8 +404,7 @@ let loadData folder =
                 |> Seq.collect (fun usersObj -> usersObj.users)
                 |> Seq.map (fun user -> 
                     users.[user.id] <- user
-                    visitUsers.[user.id] <- VisitsCollection()
-                    usersSerialized.[user.id] <- serializeObject(user))
+                    visitUsers.[user.id] <- VisitsCollection())
                 |> Seq.toList
     Console.Write("Users {0} ", users.Length)
 
@@ -425,8 +414,7 @@ let loadData folder =
                 |> Seq.map (fun visit -> 
                     visits.[visit.id] <- visit
                     visitLocations.[visit.location].Add(visit.id) |> ignore
-                    visitUsers.[visit.user].Add(visit.id) |> ignore
-                    visitsSerialized.[visit.id] <- serializeObject(visit)) 
+                    visitUsers.[visit.user].Add(visit.id) |> ignore) 
                 |> Seq.toList
 
     Console.WriteLine("Visits: {0}", visits.Length)
