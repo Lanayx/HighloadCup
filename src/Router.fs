@@ -24,19 +24,19 @@ let customRoutef (dictIdHandler: IdHandlers) : HttpHandler =
         | visitPath when (visitPath.StartsWithSegments(PathString("/visits"), remaining)) ->
              tryParseId (remaining.Value.Value.Substring(1)) "/visits/%i" dictIdHandler next ctx
         | userPath when (userPath.StartsWithSegments(PathString("/users"), remaining)) -> 
-            let pathString = remaining.Value.Value.Substring(1)
-            let slashIndex = pathString.IndexOf("/visits")
+            let pathString = remaining.Value.Value;
+            let slashIndex = pathString.IndexOf("/visits", StringComparison.Ordinal)
             if (slashIndex > -1)
             then
-                tryParseId (pathString.Substring(0,slashIndex)) "/users/%i/visits" dictIdHandler next ctx
+                tryParseId (pathString.Substring(1,slashIndex-1)) "/users/%i/visits" dictIdHandler next ctx
             else 
-                tryParseId pathString "/users/%i" dictIdHandler next ctx
+                tryParseId (pathString.Substring(1)) "/users/%i" dictIdHandler next ctx
         | locationPath when (locationPath.StartsWithSegments(PathString("/locations"), remaining)) ->          
-            let pathString = remaining.Value.Value.Substring(1)
-            let slashIndex = pathString.IndexOf("/avg")
+            let pathString = remaining.Value.Value
+            let slashIndex = pathString.IndexOf("/avg", StringComparison.Ordinal)
             if (slashIndex > -1)
             then
-                tryParseId (pathString.Substring(0,slashIndex)) "/locations/%i/avg" dictIdHandler next ctx
+                tryParseId (pathString.Substring(1,slashIndex-1)) "/locations/%i/avg" dictIdHandler next ctx
             else 
-                tryParseId pathString "/locations/%i" dictIdHandler next ctx
+                tryParseId (pathString.Substring(1)) "/locations/%i" dictIdHandler next ctx
         | _-> shortCircuit
