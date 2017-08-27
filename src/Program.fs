@@ -16,7 +16,6 @@ open Juraff.Tasks
 open Juraff.HttpHandlers
 open Juraff.Middleware
 open Juraff.HttpContextExtensions
-// open ServiceStack.Text
 open Jil
 open HCup.Models
 open HCup.RequestCounter
@@ -45,7 +44,7 @@ let visits = Array.zeroCreate<Visit> VisitsSize
 let visitLocations = Array.zeroCreate<VisitsCollection> LocationsSize
 let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 
-type UpdateEntity<'a> = 'a -> HttpContext -> Task<'a>
+type UpdateEntity<'a> = 'a -> HttpContext -> Task<unit>
  
 let serializeObject obj =
     JSON.Serialize(obj)
@@ -77,49 +76,52 @@ let isValidLocation (location: Location) =
     && location.country.Length <=50 
     && location.city.Length <=50
 
+let isValidLocationUpd (location: LocationUpd) =
+    (location.country = null || location.country.Length <=50)
+    && (location.city = null || location.city.Length <=50)
+
 let isValidUser (user: User) =
     user.id > 0
     && user.email.Length <= 100 
     && user.first_name.Length <=50 
     && user.last_name.Length <=50 
 
+let isValidUserUpd (user: UserUpd) =
+    (user.email = null || user.email.Length <= 100)
+    && (user.first_name = null || user.first_name.Length <=50)
+    && (user.last_name = null || user.last_name.Length <=50)
+
 let isValidVisit (visit: Visit) =
     visit.id > 0
     && visit.mark <= 5uy 
+
+let isValidVisitUpd (visit: VisitUpd) =
+    not visit.mark.HasValue
+    || visit.mark.Value <= 5uy 
 
 let updateLocation (oldLocation:Location) (httpContext: HttpContext) = 
     task {
         let! json = getStringFromRequest httpContext
         let newLocation = deserializeObject<LocationUpd>(json)
-        let updatedLocation  = 
-            { oldLocation with 
-                distance = if newLocation.distance.HasValue |> not then oldLocation.distance else newLocation.distance.Value 
-                city = if newLocation.city = null then oldLocation.city else newLocation.city 
-                place = if newLocation.place = null then oldLocation.place else newLocation.place 
-                country = if newLocation.country = null then oldLocation.country else newLocation.country }
-
-        if (isValidLocation updatedLocation |> not)
-        then failwith "Invalid data"
-        
-        return updatedLocation 
+        // if (isValidLocationUpd newLocation |> not)
+        // then failwith "Invalid data"
+        if newLocation.distance.HasValue then oldLocation.distance <- newLocation.distance.Value
+        if newLocation.city <> null then oldLocation.city <- newLocation.city
+        if newLocation.place <> null then oldLocation.place <- newLocation.place
+        if newLocation.country <> null then oldLocation.country <- newLocation.country
     }
 
 let updateUser (oldUser:User) (httpContext: HttpContext) = 
     task {
         let! json = getStringFromRequest httpContext
         let newUser = deserializeObject<UserUpd>(json)
-        let updatedUser  = 
-            { oldUser with 
-                first_name = if newUser.first_name = null then oldUser.first_name else newUser.first_name
-                last_name = if newUser.last_name = null then oldUser.last_name else newUser.last_name 
-                birth_date = if newUser.birth_date.HasValue |> not then oldUser.birth_date else newUser.birth_date.Value 
-                gender = if newUser.gender.HasValue |> not then oldUser.gender else newUser.gender.Value 
-                email = if newUser.email = null then oldUser.email else newUser.email }
-
-        if (isValidUser updatedUser |> not)
-        then failwith "Invalid data"
-        
-        return updatedUser 
+        // if (isValidUserUpd newUser |> not)
+        // then failwith "Invalid data"
+        if newUser.first_name <> null then oldUser.first_name <- newUser.first_name
+        if newUser.last_name <> null then oldUser.last_name <- newUser.last_name
+        if newUser.birth_date.HasValue then oldUser.birth_date <- newUser.birth_date.Value
+        if newUser.gender.HasValue then oldUser.gender <- newUser.gender.Value
+        if newUser.email <> null then oldUser.email <- newUser.email
     }
 
 let getNewUserValue (oldValue: Visit) (newValue: VisitUpd) = 
@@ -144,18 +146,13 @@ let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) =
 let updateVisit (oldVisit:Visit) (httpContext: HttpContext) = 
     task {
         let! json = getStringFromRequest httpContext
-        let newVisit = deserializeObject<VisitUpd>(json)
-        let updatedVisit  = 
-            { oldVisit with 
-                user = getNewUserValue oldVisit newVisit
-                location = getNewLocationValue oldVisit newVisit 
-                visited_at = if newVisit.visited_at.HasValue |> not then oldVisit.visited_at else newVisit.visited_at.Value 
-                mark = if newVisit.mark.HasValue |> not then oldVisit.mark else newVisit.mark.Value }
-
-        if (isValidVisit updatedVisit |> not)
-        then failwith "Invalid data"
-        
-        return updatedVisit 
+        let newVisit = deserializeObject<VisitUpd>(json)        
+        // if (isValidVisitUpd newVisit |> not)
+        // then failwith "Invalid data"
+        oldVisit.user <- getNewUserValue oldVisit newVisit
+        oldVisit.location <- getNewLocationValue oldVisit newVisit 
+        if newVisit.visited_at.HasValue then oldVisit.visited_at <- newVisit.visited_at.Value 
+        if newVisit.mark.HasValue then oldVisit.mark <- newVisit.mark.Value
     }
 
 let updateEntity (collection: 'a[])
@@ -169,8 +166,7 @@ let updateEntity (collection: 'a[])
             setStatusCode 404 next httpContext
         | _ -> 
             task {
-                let! updatedEntity = updateFunc oldEntity httpContext
-                collection.[id] <- updatedEntity
+                do! updateFunc oldEntity httpContext
                 return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
             }
 
@@ -228,6 +224,7 @@ let addUser (next : HttpFunc) (httpContext: HttpContext) =
 
 type UserVisit = { mark: uint8; visited_at: uint32; place: string }
 type UserVisits = { visits: seq<UserVisit> }
+[<Struct>]
 type QueryVisit = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; country: string; toDistance: ParseResult<uint16>}
 
 let getUserVisitsQuery (httpContext: HttpContext) =
@@ -235,10 +232,10 @@ let getUserVisitsQuery (httpContext: HttpContext) =
     let toDate = queryNullableParse fromDate "toDate" UInt32.TryParse httpContext
     let toDistance = queryNullableParse toDate "toDistance" UInt16.TryParse httpContext
     match toDistance with
-    | Error -> None
+    | Error -> Non
     | _ ->
             let country = queryStringParse "country" httpContext
-            Some {
+            Som {
                 fromDate = fromDate
                 toDate = toDate
                 country = country
@@ -264,7 +261,7 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
             setStatusCode 404 next httpContext
         | user ->
             match getUserVisitsQuery httpContext with
-            | Some query ->
+            | Som query ->
                 task { 
                     let usersVisits = visitUsers.[userId] 
                                       |> Seq.map (fun key -> visits.[key])   
@@ -277,9 +274,10 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
                                       |> Seq.sortBy (fun v -> v.visited_at)
                     return! jsonCustom { visits = usersVisits } next httpContext
                 }
-            | None -> setStatusCode 400 next httpContext
+            | Non -> setStatusCode 400 next httpContext
 
 type Average = { avg: float }
+[<Struct>]
 type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<Sex>}
 
 let getAvgMarkQuery (httpContext: HttpContext) =
@@ -289,9 +287,9 @@ let getAvgMarkQuery (httpContext: HttpContext) =
     let toAge = queryNullableParse fromAge "toAge" Int32.TryParse httpContext
     let gender = queryNullableParse toAge "gender" Sex.TryParse httpContext
     match gender with
-    | Error -> None
+    | Error -> Non
     | _ ->
-            Some {
+            Som {
                 fromDate = fromDate
                 toDate = toDate
                 fromAge = fromAge
@@ -307,16 +305,13 @@ let diffYears (startDate: DateTime) (endDate: DateTime) =
 
 
 let filterByQueryAvg (query: QueryAvg) (visit: Visit) =
-    let user = 
-        if (query.gender <> ParseResult.Empty || query.fromAge <> ParseResult.Empty || query.toAge <> ParseResult.Empty)
-        then Some users.[visit.user]
-        else None
+    let user = users.[visit.user]
 
     checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
         && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
-        && (checkParseResult query.gender (fun gender -> user.Value.gender = gender))
-        && (checkParseResult query.toAge (fun toAge -> (diffYears ((float) user.Value.birth_date |> convertToDate) currentDate ) <  toAge))
-        && (checkParseResult query.fromAge (fun fromAge -> (diffYears ((float) user.Value.birth_date |> convertToDate) currentDate ) >= fromAge))
+        && (checkParseResult query.gender (fun gender -> user.gender = gender))
+        && (checkParseResult query.toAge (fun toAge -> (diffYears ((float) user.birth_date |> convertToDate) currentDate ) <  toAge))
+        && (checkParseResult query.fromAge (fun fromAge -> (diffYears ((float) user.birth_date |> convertToDate) currentDate ) >= fromAge))
 
 let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) = 
     if (locationId > locations.Length)
@@ -327,7 +322,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
             setStatusCode 404 <| next <| httpContext
         | location ->
             match getAvgMarkQuery httpContext with
-            | Some query ->
+            | Som query ->
                 task {
                     let marks = visitLocations.[locationId] 
                                       |> Seq.map (fun key -> visits.[key])   
@@ -337,7 +332,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                               | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> (float)visit.mark), 5)
                     return! jsonCustom { avg = avg } next httpContext
                 }
-            | None -> setStatusCode 400 next httpContext
+            | Non -> setStatusCode 400 next httpContext
 
 let getActionsDictionary = Dictionary<string, IdHandler>()
 getActionsDictionary.Add("/locations/%i", getEntity locations)

@@ -2,16 +2,15 @@ namespace HCup.Models
 
 open System
 open System.Collections.Concurrent
-open Newtonsoft.Json
 
 [<CLIMutable>]
 type Location =
     {
-        distance : uint16
-        city: string
-        place: string
         id: int32
-        country: string
+        mutable distance : uint16
+        mutable city: string
+        mutable place: string
+        mutable country: string
     }
 
 [<CLIMutable>]
@@ -49,11 +48,11 @@ type UserUpd =
 type User =
     {
         id: int32
-        first_name : string
-        last_name: string
-        birth_date: int64
-        gender: Sex
-        email: string
+        mutable first_name : string
+        mutable last_name: string
+        mutable birth_date: int64
+        mutable gender: Sex
+        mutable email: string
     }
 
 [<CLIMutable>]
@@ -75,10 +74,10 @@ type VisitUpd =
 type Visit =
     {
         id: int32
-        user : int32
-        location: int32
-        visited_at: uint32
-        mark: uint8
+        mutable user : int32
+        mutable location: int32
+        mutable visited_at: uint32
+        mutable mark: uint8
     }
 
 [<CLIMutable>]
@@ -86,3 +85,8 @@ type Visits =
     {
         visits : Visit[]
     }
+
+[<Struct>]
+type StructOption<'a> =
+    | Som of 'a
+    | Non
