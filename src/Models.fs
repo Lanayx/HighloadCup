@@ -3,15 +3,13 @@ namespace HCup.Models
 open System
 open System.Collections.Concurrent
 
-[<CLIMutable>]
-type Location =
-    {
-        id: int32
-        mutable distance : uint16
-        mutable city: string
-        mutable place: string
-        mutable country: string
-    }
+
+type Location() =
+        [<DefaultValue>]val mutable id: int32
+        [<DefaultValue>]val mutable distance : uint16
+        [<DefaultValue>]val mutable city: string
+        [<DefaultValue>]val mutable place: string
+        [<DefaultValue>]val mutable country: string
 
 [<CLIMutable>]
 type LocationUpd =
@@ -44,16 +42,13 @@ type UserUpd =
         email: string
     }
 
-[<CLIMutable>]
-type User =
-    {
-        id: int32
-        mutable first_name : string
-        mutable last_name: string
-        mutable birth_date: int64
-        mutable gender: Sex
-        mutable email: string
-    }
+type User() =
+        [<DefaultValue>]val mutable id: int32
+        [<DefaultValue>]val mutable first_name : string
+        [<DefaultValue>]val mutable last_name: string
+        [<DefaultValue>]val mutable birth_date: int64
+        [<DefaultValue>]val mutable gender: Sex
+        [<DefaultValue>]val mutable email: string
 
 [<CLIMutable>]
 type Users =
@@ -70,15 +65,12 @@ type VisitUpd =
         mark: Nullable<uint8>
     }
 
-[<CLIMutable>]
-type Visit =
-    {
-        id: int32
-        mutable user : int32
-        mutable location: int32
-        mutable visited_at: uint32
-        mutable mark: uint8
-    }
+type Visit() =
+        [<DefaultValue>]val mutable id: int32
+        [<DefaultValue>]val mutable user : int32
+        [<DefaultValue>]val mutable location: int32
+        [<DefaultValue>]val mutable visited_at: uint32
+        [<DefaultValue>]val mutable mark: uint8
 
 [<CLIMutable>]
 type Visits =
