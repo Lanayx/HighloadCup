@@ -192,7 +192,7 @@ let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
                                        VisitActor.AddLocationVisit visit.location visitLocations.[visit.location] visit.id                         
                                        VisitActor.AddUserVisit visit.user visitUsers.[visit.user] visit.id
                                        setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                             | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext     
+                             | _ -> setStatusCode 400 next httpContext     
         else
             setStatusCode 400 next httpContext 
 
@@ -212,7 +212,7 @@ let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
                                    users.[user.id] <- user
                                    visitUsers.[user.id] <- VisitsCollection()
                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                         | _ -> setStatusCode 400 >=> setBodyAsString "Value already exists" <| next <| httpContext 
+                         | _ -> setStatusCode 400 next httpContext 
         else
             setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| next <| httpContext
 
