@@ -162,18 +162,20 @@ let updateEntity (collection: 'a[])
             }
 
 let addLocationInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
-    checkStringFromRequest stringValue
     let location = deserializeObject<Location>(stringValue)   
-    if (isValidLocation location)
-        then
-            match box locations.[location.id] with
-                         | null -> 
-                                   locations.[location.id] <- location
-                                   visitLocations.[location.id] <- VisitsCollection()
-                                   setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                         | _ -> setStatusCode 400 next httpContext
-        else
-            setStatusCode 400 next httpContext   
+    if (location.city |> isNull || location.country |> isNull || location.place |> isNull)
+    then setStatusCode 400 next httpContext
+    else
+        if (isValidLocation location)
+            then
+                match box locations.[location.id] with
+                             | null -> 
+                                       locations.[location.id] <- location
+                                       visitLocations.[location.id] <- VisitsCollection()
+                                       setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
+                             | _ -> setStatusCode 400 next httpContext
+            else
+                setStatusCode 400 next httpContext   
 
 let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
     task {
@@ -181,9 +183,8 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
         return! addLocationInternal stringValue next httpContext
     }
 
-let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) = 
-    checkStringFromRequest stringValue
-    let visit = deserializeObject<Visit>(stringValue)  
+let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =     
+    let visit = deserializeObject<Visit>(stringValue) 
     if (isValidVisit visit)
         then
             match box visits.[visit.id] with
@@ -203,18 +204,20 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
     }
 
 let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
-    checkStringFromRequest stringValue
-    let user = deserializeObject<User>(stringValue)    
-    if (isValidUser user)
-        then
-            match box users.[user.id] with
-                         | null ->
-                                   users.[user.id] <- user
-                                   visitUsers.[user.id] <- VisitsCollection()
-                                   setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                         | _ -> setStatusCode 400 next httpContext 
-        else
-            setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| next <| httpContext
+    let user = deserializeObject<User>(stringValue)
+    if (user.email |> isNull || user.first_name |> isNull || user.last_name |> isNull)
+    then setStatusCode 400 next httpContext
+    else
+        if (isValidUser user)
+            then
+                match box users.[user.id] with
+                             | null ->
+                                       users.[user.id] <- user
+                                       visitUsers.[user.id] <- VisitsCollection()
+                                       setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
+                             | _ -> setStatusCode 400 next httpContext 
+            else
+                setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| next <| httpContext
 
 let addUser (next : HttpFunc) (httpContext: HttpContext) = 
     task {
