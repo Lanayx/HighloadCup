@@ -21,7 +21,7 @@ let toParseResult parseFun value =
     bind (parseFun value) ParseResult.Error ParseResult.Success
 
 let toString parseFun (strv: StringValues) = 
-    strv.Item 0 |> (toParseResult parseFun)
+    toParseResult parseFun <| strv.Item 0
 
 let queryNullableParse prevResult paramName parseFun (httpContext: HttpContext) =
     match prevResult with

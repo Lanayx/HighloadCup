@@ -89,11 +89,11 @@ let isValidUserUpd (user: UserUpd) =
 
 let isValidVisit (visit: Visit) =
     visit.id > 0
-    && visit.mark <= 5uy 
+    && visit.mark <= 5.0 
 
 let isValidVisitUpd (visit: VisitUpd) =
     not visit.mark.HasValue
-    || visit.mark.Value <= 5uy 
+    || visit.mark.Value <= 5.0
 
 let updateLocation (oldLocation:Location) json = 
     checkStringFromRequest json
@@ -225,7 +225,7 @@ let addUser (next : HttpFunc) (httpContext: HttpContext) =
         return! addUserInternal stringValue next httpContext
     }
 
-type UserVisit = { mark: uint8; visited_at: uint32; place: string }
+type UserVisit = { mark: float; visited_at: uint32; place: string }
 type UserVisits = { visits: seq<UserVisit> }
 [<Struct>]
 type QueryVisit = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; country: string; toDistance: ParseResult<uint16>}
@@ -313,8 +313,8 @@ let filterByQueryAvg (query: QueryAvg) (visit: Visit) =
     checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
         && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
         && (checkParseResult query.gender (fun gender -> user.gender = gender))
-        && (checkParseResult query.toAge (fun toAge -> (diffYears ((float) user.birth_date |> convertToDate) currentDate ) <  toAge))
-        && (checkParseResult query.fromAge (fun fromAge -> (diffYears ((float) user.birth_date |> convertToDate) currentDate ) >= fromAge))
+        && (checkParseResult query.toAge (fun toAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) <  toAge))
+        && (checkParseResult query.fromAge (fun fromAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) >= fromAge))
 
 let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) = 
     if (locationId > locations.Length)
@@ -331,7 +331,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                                       |> Seq.filter (filterByQueryAvg query)
                 let avg = match marks with
                               | seq when Seq.isEmpty seq -> 0.0
-                              | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> (float)visit.mark), 5)            
+                              | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> visit.mark), 5)            
                 task {
                     return! jsonCustom { avg = avg } next httpContext
                 }
@@ -352,19 +352,15 @@ postActionsDictionary.Add("/visits/%i", updateEntity visits updateVisit)
 
 let webApp = 
     choose [
-        GET >=>
-            choose [
-                customRoutef getActionsDictionary
-            ]
+        GET >=> customRoutef getActionsDictionary
         POST >=>
             choose [
                 route "/locations/new" >=> addLocation
                 route "/users/new" >=> addUser
                 route "/visits/new" >=> addVisit
-
                 customRoutef postActionsDictionary
             ]
-        setStatusCode 404 >=> text "Not Found" ]
+        setStatusCode 404 ]
 
 // ---------------------------------
 // Error handler

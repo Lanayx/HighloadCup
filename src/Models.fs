@@ -37,7 +37,7 @@ type UserUpd =
     {
         first_name : string
         last_name: string
-        birth_date: Nullable<int64>
+        birth_date: Nullable<float>
         gender: Nullable<Sex>
         email: string
     }
@@ -46,7 +46,7 @@ type User() =
         [<DefaultValue>]val mutable id: int32
         [<DefaultValue>]val mutable first_name : string
         [<DefaultValue>]val mutable last_name: string
-        [<DefaultValue>]val mutable birth_date: int64
+        [<DefaultValue>]val mutable birth_date: float
         [<DefaultValue>]val mutable gender: Sex
         [<DefaultValue>]val mutable email: string
 
@@ -62,7 +62,7 @@ type VisitUpd =
         user : Nullable<int32>
         location: Nullable<int32>
         visited_at: Nullable<uint32>
-        mark: Nullable<uint8>
+        mark: Nullable<float>
     }
 
 type Visit() =
@@ -70,7 +70,7 @@ type Visit() =
         [<DefaultValue>]val mutable user : int32
         [<DefaultValue>]val mutable location: int32
         [<DefaultValue>]val mutable visited_at: uint32
-        [<DefaultValue>]val mutable mark: uint8
+        [<DefaultValue>]val mutable mark: float
 
 [<CLIMutable>]
 type Visits =
