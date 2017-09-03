@@ -27,7 +27,7 @@ type RequestCounterMiddleware (next : RequestDelegate,
             let! result = next.Invoke ctx
             Interlocked.Increment(outstandingRequestCount)
             |> (fun reqCount -> 
-                                if (reqCount = 150149 || reqCount = 190149)
+                                if (reqCount = 150154 || reqCount = 190154)
                                 then GC.Collect(1)
                                 if (reqCount % 5000 = 0)
                                 then
