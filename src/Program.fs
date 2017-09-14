@@ -46,16 +46,16 @@ let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 
 type UpdateEntity<'a> = 'a -> string -> unit
  
-let serializeObject obj =
+let inline serializeObject obj =
     JSON.Serialize(obj)
 
-let deserializeObject<'a> (str: string) =
+let inline deserializeObject<'a> (str: string) =
     JSON.Deserialize<'a>(str)
 
 let jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeObject obj) <| next <| httpContext
 
-let checkStringFromRequest (stringValue: string) = 
+let inline checkStringFromRequest (stringValue: string) = 
     if (stringValue.Contains(": null"))
         then failwith "Null field"
 
@@ -300,10 +300,10 @@ let getAvgMarkQuery (httpContext: HttpContext) =
                 gender = gender
             }  
 
-let convertToDate timestamp =
+let inline convertToDate timestamp =
     timestampBase.AddSeconds(timestamp)
 
-let diffYears (startDate: DateTime) (endDate: DateTime) =
+let inline diffYears (startDate: DateTime) (endDate: DateTime) =
     (endDate.Year - startDate.Year - 1) + (if ((endDate.Month > startDate.Month) || ((endDate.Month = startDate.Month) && (endDate.Day >= startDate.Day))) then 1 else 0)
 
 
@@ -337,17 +337,17 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                 }
             | Non -> setStatusCode 400 next httpContext
 
-let getActionsDictionary = Dictionary<string, IdHandler>()
-getActionsDictionary.Add("/locations/%i", getEntity locations)
-getActionsDictionary.Add("/users/%i", getEntity users)
-getActionsDictionary.Add("/visits/%i", getEntity visits)
-getActionsDictionary.Add("/users/%i/visits", getUserVisits)
-getActionsDictionary.Add("/locations/%i/avg", getAvgMark)
+let getActionsDictionary = Dictionary<Route, IdHandler>()
+getActionsDictionary.Add(Route.Location, getEntity locations)
+getActionsDictionary.Add(Route.User, getEntity users)
+getActionsDictionary.Add(Route.Visit, getEntity visits)
+getActionsDictionary.Add(Route.UserVisits, getUserVisits)
+getActionsDictionary.Add(Route.LocationAvg, getAvgMark)
 
-let postActionsDictionary = Dictionary<string, IdHandler>()
-postActionsDictionary.Add("/locations/%i", updateEntity locations updateLocation)
-postActionsDictionary.Add("/users/%i", updateEntity users updateUser)
-postActionsDictionary.Add("/visits/%i", updateEntity visits updateVisit)
+let postActionsDictionary = Dictionary<Route, IdHandler>()
+postActionsDictionary.Add(Route.Location, updateEntity locations updateLocation)
+postActionsDictionary.Add(Route.User, updateEntity users updateUser)
+postActionsDictionary.Add(Route.Visit, updateEntity visits updateVisit)
 
 
 let webApp = 
