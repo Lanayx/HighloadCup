@@ -14,6 +14,7 @@
     <Compile Include="Juraff/HttpHandlers.fs" />
     <Compile Include="Juraff/Middleware.fs" />
     <Compile Include="Models.fs" />
+    <Compile Include="Counter.fs" />
     <Compile Include="RequestCounter.fs" />
     <Compile Include="Actors.fs" />
     <Compile Include="Router.fs" />
