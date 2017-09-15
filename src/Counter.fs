@@ -7,7 +7,7 @@ let mutable lastRequestCount = 0
 
 let syncTimer = new System.Timers.Timer(800.0)
 syncTimer.Elapsed.Add(fun arg ->
-    if (lastRequestCount > 0 && lastRequestCount < outstandingRequestCount.Value)
+    if (lastRequestCount > 0 && lastRequestCount = outstandingRequestCount.Value)
     then
         Console.WriteLine("Running GC")
         GC.Collect(2)
