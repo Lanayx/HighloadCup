@@ -18,19 +18,20 @@ let private getRequestInfo (ctx : HttpContext) =
 |||> sprintf "%s %s %s"
 
 type RequestCounterMiddleware (next : RequestDelegate,
-                               handler : HttpHandler) =
-
+                               handler : unit-> unit) =
     do if isNull next then raise (ArgumentNullException("next"))
 
     member __.Invoke (ctx : HttpContext) =
         task {
             let! result = next.Invoke ctx
+
             Interlocked.Increment(outstandingRequestCount)
             |> (fun reqCount -> 
-                                if (reqCount = 150154 || reqCount = 190154)
-                                then GC.Collect(1)
-                                if (reqCount % 5000 = 0)
+                                // if (reqCount = 150154 || reqCount = 190154)
+                                // then GC.Collect(1)
+                                if (reqCount % 10000 = 0)
                                 then
+                                    handler()
                                     Console.Write(("Result {0} {1}; Threads {2}; "),
                                         reqCount,
                                         DateTime.Now.ToString("HH:mm:ss.ffff"),
@@ -47,6 +48,6 @@ type RequestCounterMiddleware (next : RequestDelegate,
 
 
 type IApplicationBuilder with
-    member this.UseRequestCounter (handler : HttpHandler) =
+    member this.UseRequestCounter (handler : unit -> unit) =
         this.UseMiddleware<RequestCounterMiddleware> handler
         |> ignore

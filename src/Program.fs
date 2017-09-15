@@ -5,6 +5,7 @@ open System.IO
 open System.IO.Compression
 open System.Collections.Generic
 open System.Collections.Concurrent
+open System.Globalization
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
@@ -46,20 +47,20 @@ let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 
 type UpdateEntity<'a> = 'a -> string -> unit
  
-let inline serializeObject obj =
+let inline serializeObject (obj: ^a) =
     JSON.Serialize(obj)
 
-let inline deserializeObject<'a> (str: string) =
-    JSON.Deserialize<'a>(str)
+let inline deserializeObject< ^a > (str: string) =
+    JSON.Deserialize< ^a >(str)
 
-let jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
+let inline jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeObject obj) <| next <| httpContext
 
 let inline checkStringFromRequest (stringValue: string) = 
     if (stringValue.Contains(": null"))
         then failwith "Null field"
 
-let getEntity (collection: 'a[]) id next = 
+let inline getEntity (collection: ^a[]) id next = 
     if (id > collection.Length)
     then setStatusCode 404 next
     else
@@ -145,8 +146,8 @@ let updateVisit (oldVisit:Visit) json =
     if newVisit.visited_at.HasValue then oldVisit.visited_at <- newVisit.visited_at.Value 
     if newVisit.mark.HasValue then oldVisit.mark <- newVisit.mark.Value
 
-let updateEntity (collection: 'a[])
-                 (updateFunc: UpdateEntity<'a>) (id: int) (next : HttpFunc) (httpContext: HttpContext) =
+let inline updateEntity (collection: ^a[])
+                 (updateFunc: UpdateEntity< ^a >) (id: int) (next : HttpFunc) (httpContext: HttpContext) =
     if (id > collection.Length)
     then setStatusCode 404 next httpContext
     else
@@ -331,7 +332,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                                       |> Seq.filter (filterByQueryAvg query)
                 let avg = match marks with
                               | seq when Seq.isEmpty seq -> 0.0
-                              | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> visit.mark), 5)            
+                              | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> visit.mark), 5, MidpointRounding.AwayFromZero)            
                 task {
                     return! jsonCustom { avg = avg } next httpContext
                 }
@@ -349,6 +350,9 @@ postActionsDictionary.Add(Route.Location, updateEntity locations updateLocation)
 postActionsDictionary.Add(Route.User, updateEntity users updateUser)
 postActionsDictionary.Add(Route.Visit, updateEntity visits updateVisit)
 
+
+let analyze() = 
+    Console.WriteLine("Locations: {0} Users: {0} Visits: {0}", locations.Length, users.Length, visits.Length)
 
 let webApp = 
     choose [
@@ -375,7 +379,7 @@ let errorHandler (ex : Exception) (logger : ILogger)=
 // ---------------------------------
 
 let configureApp (app : IApplicationBuilder) = 
-    app.UseRequestCounter webApp
+    app.UseRequestCounter analyze
     app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
