@@ -24,6 +24,8 @@ open HCup.RequestCounter
 open HCup.Actors
 open HCup.Router
 open HCup.Parser
+open HCup.Binder
+open Serializers
 
 // ---------------------------------
 // Web app
@@ -50,9 +52,6 @@ let serializer = JsonSerializer()
 
 type UpdateEntity<'a> = 'a -> string -> unit
  
-let inline serializeObject (obj: ^a) =
-    JsonConvert.SerializeObject obj
-
 let inline deserializeObject< ^a > (str: string) =
     JsonConvert.DeserializeObject< ^a > str
 
@@ -61,20 +60,21 @@ let inline deserializeObjectFromStream< ^a > (s: Stream) =
      use jr = new JsonTextReader(sr)
      serializer.Deserialize< ^a >(jr)
 
-let inline jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
-    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeObject obj) <| next <| httpContext
+let inline jsonCustom (serializeFun: ^a -> string) (obj: ^a) (next : HttpFunc) (httpContext: HttpContext) =
+    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeFun obj) <| next <| httpContext
 
 let inline checkStringFromRequest (stringValue: string) = 
     if (stringValue.Contains(": null"))
         then failwith "Null field"
 
-let inline getEntity (collection: ^a[]) id next = 
+let inline getEntity (serializeFun: ^a -> string) (collection: ^a[]) id next = 
     if (id > collection.Length)
     then setStatusCode 404 next
     else
-        match box collection.[id] with
+        let entity = collection.[id]
+        match box entity with
         | null -> setStatusCode 404 next
-        | entity -> jsonCustom entity next
+        | _ -> jsonCustom serializeFun entity next
 
 let updateLocation (oldLocation:Location) json = 
     checkStringFromRequest json
@@ -153,8 +153,12 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
         return! addLocationInternal location next httpContext
     }
 
-let addVisitInternal (visit: Visit) (next : HttpFunc) (httpContext: HttpContext) =    
-    match box visits.[visit.id] with
+let addVisitInternal visitString (next : HttpFunc) (httpContext: HttpContext) =    
+    let visitOption = deserializeVisit visitString
+    match visitOption with
+    | None -> setStatusCode 400 next httpContext
+    | Some visit ->    
+        match box visits.[visit.id] with
                             | null -> 
                                     visits.[visit.id] <- visit                                
                                     VisitActor.AddLocationVisit visit.location visitLocations.[visit.location] visit.id                         
@@ -164,8 +168,8 @@ let addVisitInternal (visit: Visit) (next : HttpFunc) (httpContext: HttpContext)
 
 let addVisit (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let visit = deserializeObjectFromStream<Visit> httpContext.Request.Body
-        return! addVisitInternal visit next httpContext
+        let! visitString = httpContext.ReadBodyFromRequest()
+        return! addVisitInternal visitString next httpContext
     }
 
 let addUserInternal (user: User) (next : HttpFunc) (httpContext: HttpContext) =
@@ -185,8 +189,6 @@ let addUser (next : HttpFunc) (httpContext: HttpContext) =
         return! addUserInternal user next httpContext
     }
 
-type UserVisit = { mark: float; visited_at: uint32; place: string }
-type UserVisits = { visits: seq<UserVisit> }
 [<Struct>]
 type QueryVisit = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; country: string; toDistance: ParseResult<uint16>}
 
@@ -235,11 +237,11 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
                                                                  })
                                       |> Seq.sortBy (fun v -> v.visited_at)                
                 task {
-                    return! jsonCustom { visits = usersVisits } next httpContext
+                    return! jsonCustom serializeUserVisits { visits = usersVisits } next httpContext
                 }
             | Non -> setStatusCode 400 next httpContext
 
-type Average = { avg: float }
+
 [<Struct>]
 type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<Sex>}
 
@@ -293,14 +295,14 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                               | seq when Seq.isEmpty seq -> 0.0
                               | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> visit.mark), 5, MidpointRounding.AwayFromZero)            
                 task {
-                    return! jsonCustom { avg = avg } next httpContext
+                    return! jsonCustom serializeAverage { avg = avg } next httpContext
                 }
             | Non -> setStatusCode 400 next httpContext
 
 let getActionsDictionary = Dictionary<Route, IdHandler>()
-getActionsDictionary.Add(Route.Location, getEntity locations)
-getActionsDictionary.Add(Route.User, getEntity users)
-getActionsDictionary.Add(Route.Visit, getEntity visits)
+getActionsDictionary.Add(Route.Location, getEntity serializeLocation locations)
+getActionsDictionary.Add(Route.User, getEntity serializeUser users)
+getActionsDictionary.Add(Route.Visit, getEntity serializeVisit visits)
 getActionsDictionary.Add(Route.UserVisits, getUserVisits)
 getActionsDictionary.Add(Route.LocationAvg, getAvgMark)
 
@@ -330,6 +332,7 @@ let webApp =
 // ---------------------------------
 
 let errorHandler (ex : Exception) (logger : ILogger)=
+    Console.WriteLine(ex)
     setStatusCode 400
 
 // ---------------------------------

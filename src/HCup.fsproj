@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Models.fs" />
+    <Compile Include="Binder.fs" />
     <Compile Include="GCCounter.fs" />
     <Compile Include="RequestCounter.fs" />
     <Compile Include="Serializers.fs" />

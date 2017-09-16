@@ -2,8 +2,6 @@ namespace HCup.Models
 
 open System
 open System.Collections.Concurrent
-open Newtonsoft.Json
-open Newtonsoft.Json.Converters
 
 
 type Location() =
@@ -30,10 +28,10 @@ type Locations =
 
 
 [<Struct>]
-[<JsonConverter(typeof<StringEnumConverter>)>]
 type Sex = 
-    | m = 0
-    | f = 1
+    | undef = 0
+    | m = 1
+    | f = 2
 
 [<CLIMutable>]
 type UserUpd =
@@ -85,3 +83,14 @@ type Visits =
 type StructOption<'a> =
     | Som of 'a
     | Non
+
+[<Struct>]
+type Average = { avg: float }
+
+[<Struct>]
+type UserVisit = { mark: float; visited_at: uint32; place: string }
+
+[<Struct>]
+type UserVisits = { visits: seq<UserVisit> }
+
+    

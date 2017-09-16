@@ -3,22 +3,9 @@ module HCup.Parser
 open System
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Primitives
+open HCup.Models
+open HCup.Binder
 
-[<Struct>]
-type ParseResult<'a> =
-    | Success of 'a
-    | Empty
-    | Error
-
-let bind m negativeValue f  =
-    match m with
-    | true, x -> 
-        x |> f
-    | x -> 
-        negativeValue
-
-let toParseResult parseFun value = 
-    bind (parseFun value) ParseResult.Error ParseResult.Success
 
 let toString parseFun (strv: StringValues) = 
     toParseResult parseFun <| strv.Item 0
