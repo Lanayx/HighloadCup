@@ -11,14 +11,11 @@ type Location() =
         [<DefaultValue>]val mutable place: string
         [<DefaultValue>]val mutable country: string
 
-[<CLIMutable>]
-type LocationUpd =
-    {
-        distance : Nullable<uint16>
-        city: string
-        place: string
-        country: string
-    }
+type LocationUpd() =
+        [<DefaultValue>]val mutable distance : Nullable<uint16>
+        [<DefaultValue>]val mutable city: string
+        [<DefaultValue>]val mutable place: string
+        [<DefaultValue>]val mutable country: string
 
 [<CLIMutable>]
 type Locations =
@@ -33,15 +30,13 @@ type Sex =
     | m = 1
     | f = 2
 
-[<CLIMutable>]
-type UserUpd =
-    {
-        first_name : string
-        last_name: string
-        birth_date: Nullable<float>
-        gender: Nullable<Sex>
-        email: string
-    }
+
+type UserUpd() =
+        [<DefaultValue>]val mutable first_name : string
+        [<DefaultValue>]val mutable last_name: string
+        [<DefaultValue>]val mutable birth_date: Nullable<float>
+        [<DefaultValue>]val mutable gender: Nullable<Sex>
+        [<DefaultValue>]val mutable email: string
 
 type User() =
         [<DefaultValue>]val mutable id: int32
@@ -57,14 +52,12 @@ type Users =
         users : User[]
     }
 
-[<CLIMutable>]
-type VisitUpd =
-    {
-        user : Nullable<int32>
-        location: Nullable<int32>
-        visited_at: Nullable<uint32>
-        mark: Nullable<float>
-    }
+
+type VisitUpd() =
+        [<DefaultValue>]val mutable user : Nullable<int32>
+        [<DefaultValue>]val mutable location: Nullable<int32>
+        [<DefaultValue>]val mutable visited_at: Nullable<uint32>
+        [<DefaultValue>]val mutable mark: Nullable<float>
 
 type Visit() =
         [<DefaultValue>]val mutable id: int32

@@ -29,8 +29,7 @@ let deserializeVisit (json: string) =
     let mutable success = true
     use sr = new StringReader(json)
     use reader = new JsonTextReader(sr)
-    while(reader.Read() && success) do            
-        Console.WriteLine("Reader: {0} {1}", reader.ValueType, reader.Value)
+    while(reader.Read() && success) do      
         match string reader.Value with
         | "id" ->
              match toParseResult Int32.TryParse (reader.ReadAsString()) with
@@ -54,6 +53,37 @@ let deserializeVisit (json: string) =
              | _ -> success <- false
         | _ -> ()
     if success && visit.id<>0 && visit.location<>0 && visit.mark<>0.0 && visit.user<>0 && visit.visited_at <>0ul
+    then Some visit 
+    else 
+        reader.Close()
+        None
+
+let deserializeVisitUpd (json: string) =
+    let visit = VisitUpd()  
+    let mutable success = true
+    use sr = new StringReader(json)
+    use reader = new JsonTextReader(sr)
+    while(reader.Read() && success) do     
+        match string reader.Value with
+        | "user" ->
+             match toParseResult Int32.TryParse (reader.ReadAsString()) with
+             | Success user -> visit.user <- Nullable user
+             | _ -> success <- false
+
+        | "visited_at" -> 
+             match toParseResult UInt32.TryParse (reader.ReadAsString()) with
+             | Success visited_at -> visit.visited_at <- Nullable visited_at
+             | _ -> success <- false
+        | "location" ->
+             match toParseResult Int32.TryParse (reader.ReadAsString()) with
+             | Success location -> visit.location <- Nullable location
+             | _ -> success <- false
+        | "mark" -> 
+             match toParseResult Double.TryParse (reader.ReadAsString()) with
+             | Success mark -> visit.mark <- Nullable mark
+             | _ -> success <- false
+        | _ -> ()
+    if success
     then Some visit 
     else 
         reader.Close()
@@ -83,8 +113,7 @@ let deserializeUser (json: string) =
     let mutable success = true
     use sr = new StringReader(json)
     use reader = new JsonTextReader(sr)
-    while(reader.Read() && success) do            
-        Console.WriteLine("Reader: {0} {1}", reader.ValueType, reader.Value)
+    while(reader.Read() && success) do
         match string reader.Value with
         | "id" ->
              match toParseResult Int32.TryParse (reader.ReadAsString()) with
@@ -112,6 +141,40 @@ let deserializeUser (json: string) =
         reader.Close()
         None
 
+let deserializeUserUpd (json: string) =
+    let user = UserUpd()  
+    let mutable success = true
+    use sr = new StringReader(json)
+    use reader = new JsonTextReader(sr)
+    while(reader.Read() && success) do          
+        match string reader.Value with
+        | "first_name" ->
+             user.first_name <- reader.ReadAsString()
+             if isNull user.first_name
+             then success <- false
+        | "last_name" -> 
+             user.last_name <- reader.ReadAsString()
+             if isNull user.last_name
+             then success <- false
+        | "birth_date" ->
+             match toParseResult Double.TryParse (reader.ReadAsString()) with
+             | Success birth_date -> user.birth_date <- Nullable birth_date
+             | _ -> success <- false
+        | "gender" -> 
+             match toParseResult Sex.TryParse (reader.ReadAsString()) with
+             | Success gender -> user.gender <- Nullable gender
+             | _ -> success <- false
+        | "email" -> 
+             user.email <- reader.ReadAsString()
+             if isNull user.email
+             then success <- false
+        | _ -> ()
+    if success
+    then Some user 
+    else 
+        reader.Close()
+        None
+
 let serializeLocation (location: Location) =
     use sw = new StringWriter()
     use writer = new JsonTextWriter(sw)
@@ -134,8 +197,7 @@ let deserializeLocation (json: string) =
     let mutable success = true
     use sr = new StringReader(json)
     use reader = new JsonTextReader(sr)
-    while(reader.Read() && success) do            
-        Console.WriteLine("Reader: {0} {1}", reader.ValueType, reader.Value)
+    while(reader.Read() && success) do  
         match string reader.Value with
         | "id" ->
              match toParseResult Int32.TryParse (reader.ReadAsString()) with
@@ -154,6 +216,36 @@ let deserializeLocation (json: string) =
         | _ -> ()
     if success && location.id <> 0 && location.distance<>0us && location.city |> isNull |> not && 
         location.place |> isNull |> not && location.country |> isNull |> not
+    then Some location 
+    else 
+        reader.Close()
+        None
+
+let deserializeLocationUpd (json: string) =
+    let location = LocationUpd()  
+    let mutable success = true
+    use sr = new StringReader(json)
+    use reader = new JsonTextReader(sr)
+    while(reader.Read() && success) do  
+        match string reader.Value with
+        | "distance" ->
+             match toParseResult UInt16.TryParse (reader.ReadAsString()) with
+             | Success distance -> location.distance <- Nullable distance
+             | _ -> success <- false
+        | "city" -> 
+             location.city <- reader.ReadAsString()
+             if isNull location.city
+             then success <- false
+        | "place" -> 
+             location.place <- reader.ReadAsString()
+             if isNull location.place
+             then success <- false
+        | "country" -> 
+             location.country <- reader.ReadAsString()
+             if isNull location.country
+             then success <- false
+        | _ -> ()
+    if success
     then Some location 
     else 
         reader.Close()

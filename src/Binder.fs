@@ -6,7 +6,7 @@ type ParseResult<'a> =
     | Empty
     | Error
 
-let bind m negativeValue f  =
+let inline bind m negativeValue f  =
     match m with
     | true, x -> 
         x |> f
@@ -14,5 +14,5 @@ let bind m negativeValue f  =
         negativeValue
 
 
-let toParseResult parseFun value = 
+let inline toParseResult parseFun value = 
     bind (parseFun value) ParseResult.Error ParseResult.Success

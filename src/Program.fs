@@ -50,19 +50,16 @@ let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 
 let serializer = JsonSerializer()
 
-type UpdateEntity<'a> = 'a -> string -> unit
+type UpdateEntity<'a> = 'a -> string -> bool
  
-let inline deserializeObject< ^a > (str: string) =
-    JsonConvert.DeserializeObject< ^a > str
+let inline deserializeObject< 'a > (str: string) =
+    JsonConvert.DeserializeObject< 'a > str
 
-let inline jsonCustom (serializeFun: ^a -> string) (obj: ^a) (next : HttpFunc) (httpContext: HttpContext) =
+let inline jsonCustom (serializeFun: 'a -> string) (obj: 'a) (next : HttpFunc) (httpContext: HttpContext) =
     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeFun obj) <| next <| httpContext
 
-let inline checkStringFromRequest (stringValue: string) = 
-    if (stringValue.Contains(": null"))
-        then failwith "Null field"
 
-let inline getEntity (serializeFun: ^a -> string) (collection: ^a[]) id next = 
+let getEntity (serializeFun: 'a -> string) (collection: 'a[]) id next = 
     if (id > collection.Length)
     then setStatusCode 404 next
     else
@@ -72,21 +69,27 @@ let inline getEntity (serializeFun: ^a -> string) (collection: ^a[]) id next =
         | _ -> jsonCustom serializeFun entity next
 
 let updateLocation (oldLocation:Location) json = 
-    checkStringFromRequest json
-    let newLocation = deserializeObject<LocationUpd>(json)
-    if newLocation.distance.HasValue then oldLocation.distance <- newLocation.distance.Value
-    if newLocation.city |> isNull |> not then oldLocation.city <- newLocation.city
-    if newLocation.place |> isNull |> not then oldLocation.place <- newLocation.place
-    if newLocation.country |> isNull |> not then oldLocation.country <- newLocation.country
+    let newLocationOption = deserializeLocationUpd json
+    match newLocationOption with
+    | Some newLocation ->
+        if newLocation.distance.HasValue then oldLocation.distance <- newLocation.distance.Value
+        if newLocation.city |> isNull |> not then oldLocation.city <- newLocation.city
+        if newLocation.place |> isNull |> not then oldLocation.place <- newLocation.place
+        if newLocation.country |> isNull |> not then oldLocation.country <- newLocation.country
+        true
+    | None -> false
 
 let updateUser (oldUser:User) json = 
-    checkStringFromRequest json
-    let newUser = deserializeObject<UserUpd>(json)
-    if newUser.first_name |> isNull |> not then oldUser.first_name <- newUser.first_name
-    if newUser.last_name |> isNull |> not then oldUser.last_name <- newUser.last_name
-    if newUser.birth_date.HasValue then oldUser.birth_date <- newUser.birth_date.Value
-    if newUser.gender.HasValue then oldUser.gender <- newUser.gender.Value
-    if newUser.email |> isNull |> not then oldUser.email <- newUser.email
+    let newUserOption = deserializeUserUpd json
+    match newUserOption with
+    | Some newUser ->
+        if newUser.first_name |> isNull |> not then oldUser.first_name <- newUser.first_name
+        if newUser.last_name |> isNull |> not then oldUser.last_name <- newUser.last_name
+        if newUser.birth_date.HasValue then oldUser.birth_date <- newUser.birth_date.Value
+        if newUser.gender.HasValue then oldUser.gender <- newUser.gender.Value
+        if newUser.email |> isNull |> not then oldUser.email <- newUser.email
+        true
+    | None -> false
 
 let getNewUserValue (oldValue: Visit) (newValue: VisitUpd) = 
     if (newValue.user.HasValue)
@@ -108,15 +111,17 @@ let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) =
 
 
 let updateVisit (oldVisit:Visit) json = 
-    checkStringFromRequest json
-    let newVisit = deserializeObject<VisitUpd>(json)   
-    oldVisit.user <- getNewUserValue oldVisit newVisit
-    oldVisit.location <- getNewLocationValue oldVisit newVisit 
-    if newVisit.visited_at.HasValue then oldVisit.visited_at <- newVisit.visited_at.Value 
-    if newVisit.mark.HasValue then oldVisit.mark <- newVisit.mark.Value
-
-let inline updateEntity (collection: ^a[])
-                 (updateFunc: UpdateEntity< ^a >) (id: int) (next : HttpFunc) (httpContext: HttpContext) =
+    let newVisitOption = deserializeVisitUpd json
+    match newVisitOption with
+    | Some newVisit ->
+        oldVisit.user <- getNewUserValue oldVisit newVisit
+        oldVisit.location <- getNewLocationValue oldVisit newVisit 
+        if newVisit.visited_at.HasValue then oldVisit.visited_at <- newVisit.visited_at.Value 
+        if newVisit.mark.HasValue then oldVisit.mark <- newVisit.mark.Value
+        true
+    | None -> false
+let updateEntity (collection: 'a[])
+                 (updateFunc: UpdateEntity< 'a >) (id: int) (next : HttpFunc) (httpContext: HttpContext) =
     if (id > collection.Length)
     then setStatusCode 404 next httpContext
     else
@@ -127,8 +132,9 @@ let inline updateEntity (collection: ^a[])
         | _ -> 
             task {
                 let! json = httpContext.ReadBodyFromRequest()
-                updateFunc oldEntity json
-                return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
+                if updateFunc oldEntity json
+                then return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
+                else return! setStatusCode 400 next httpContext
             }
 
 let addLocationInternal locationStr (next : HttpFunc) (httpContext: HttpContext) =
