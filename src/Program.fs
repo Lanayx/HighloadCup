@@ -132,9 +132,12 @@ let updateEntity (collection: 'a[])
         | _ -> 
             task {
                 let! json = httpContext.ReadBodyFromRequest()
-                if updateFunc oldEntity json
-                then return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                else return! setStatusCode 400 next httpContext
+                if String.IsNullOrEmpty json
+                then return! setStatusCode 400 next httpContext
+                else
+                    if updateFunc oldEntity json
+                    then return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
+                    else return! setStatusCode 400 next httpContext
             }
 
 let addLocationInternal locationStr (next : HttpFunc) (httpContext: HttpContext) =
