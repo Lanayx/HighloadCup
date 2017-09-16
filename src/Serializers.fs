@@ -129,6 +129,36 @@ let serializeLocation (location: Location) =
     writer.WriteEndObject()
     sw.ToString()
 
+let deserializeLocation (json: string) =
+    let location = Location()  
+    let mutable success = true
+    use sr = new StringReader(json)
+    use reader = new JsonTextReader(sr)
+    while(reader.Read() && success) do            
+        Console.WriteLine("Reader: {0} {1}", reader.ValueType, reader.Value)
+        match string reader.Value with
+        | "id" ->
+             match toParseResult Int32.TryParse (reader.ReadAsString()) with
+             | Success id -> location.id <- id
+             | _ -> success <- false
+        | "distance" ->
+             match toParseResult UInt16.TryParse (reader.ReadAsString()) with
+             | Success distance -> location.distance <- distance
+             | _ -> success <- false
+        | "city" -> 
+             location.city <- reader.ReadAsString()
+        | "place" -> 
+             location.place <- reader.ReadAsString()
+        | "country" -> 
+             location.country <- reader.ReadAsString()
+        | _ -> ()
+    if success && location.id <> 0 && location.distance<>0us && location.city |> isNull |> not && 
+        location.place |> isNull |> not && location.country |> isNull |> not
+    then Some location 
+    else 
+        reader.Close()
+        None
+
 let serializeAverage (average: Average) =
     use sw = new StringWriter()
     use writer = new JsonTextWriter(sw)

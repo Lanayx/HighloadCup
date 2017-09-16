@@ -55,11 +55,6 @@ type UpdateEntity<'a> = 'a -> string -> unit
 let inline deserializeObject< ^a > (str: string) =
     JsonConvert.DeserializeObject< ^a > str
 
-let inline deserializeObjectFromStream< ^a > (s: Stream) =
-     use sr = new StreamReader(s)
-     use jr = new JsonTextReader(sr)
-     serializer.Deserialize< ^a >(jr)
-
 let inline jsonCustom (serializeFun: ^a -> string) (obj: ^a) (next : HttpFunc) (httpContext: HttpContext) =
     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeFun obj) <| next <| httpContext
 
@@ -136,10 +131,11 @@ let inline updateEntity (collection: ^a[])
                 return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
             }
 
-let addLocationInternal (location: Location) (next : HttpFunc) (httpContext: HttpContext) =
-    if (location.city |> isNull || location.country |> isNull || location.place |> isNull)
-    then setStatusCode 400 next httpContext
-    else
+let addLocationInternal locationStr (next : HttpFunc) (httpContext: HttpContext) =
+    let locationOption = deserializeLocation locationStr
+    match locationOption with
+    | None -> setStatusCode 400 next httpContext
+    | Some location ->
                 match box locations.[location.id] with
                             | null -> 
                                     locations.[location.id] <- location
@@ -149,8 +145,8 @@ let addLocationInternal (location: Location) (next : HttpFunc) (httpContext: Htt
 
 let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let location = deserializeObjectFromStream<Location> httpContext.Request.Body 
-        return! addLocationInternal location next httpContext
+        let! locationStr = httpContext.ReadBodyFromRequest()
+        return! addLocationInternal locationStr next httpContext
     }
 
 let addVisitInternal visitString (next : HttpFunc) (httpContext: HttpContext) =    
@@ -172,10 +168,11 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
         return! addVisitInternal visitString next httpContext
     }
 
-let addUserInternal (user: User) (next : HttpFunc) (httpContext: HttpContext) =
-    if (user.email |> isNull || user.first_name |> isNull || user.last_name |> isNull)
-    then setStatusCode 400 next httpContext
-    else
+let addUserInternal userString (next : HttpFunc) (httpContext: HttpContext) =
+    let userOption = deserializeUser userString
+    match userOption with
+    | None -> setStatusCode 400 next httpContext
+    | Some user ->
         match box users.[user.id] with
                             | null ->
                                     users.[user.id] <- user
@@ -185,8 +182,8 @@ let addUserInternal (user: User) (next : HttpFunc) (httpContext: HttpContext) =
 
 let addUser (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let user = deserializeObjectFromStream<User> httpContext.Request.Body
-        return! addUserInternal user next httpContext
+        let! userString = httpContext.ReadBodyFromRequest()
+        return! addUserInternal userString next httpContext
     }
 
 [<Struct>]
