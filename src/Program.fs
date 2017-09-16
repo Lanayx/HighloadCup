@@ -46,6 +46,7 @@ let visits = Array.zeroCreate<Visit> VisitsSize
 let visitLocations = Array.zeroCreate<VisitsCollection> LocationsSize
 let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 
+let serializer = JsonSerializer()
 
 type UpdateEntity<'a> = 'a -> string -> unit
  
@@ -54,6 +55,11 @@ let inline serializeObject (obj: ^a) =
 
 let inline deserializeObject< ^a > (str: string) =
     JsonConvert.DeserializeObject< ^a > str
+
+let inline deserializeObjectFromStream< ^a > (s: Stream) =
+     use sr = new StreamReader(s)
+     use jr = new JsonTextReader(sr)
+     serializer.Deserialize< ^a >(jr)
 
 let inline jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeObject obj) <| next <| httpContext
@@ -130,8 +136,7 @@ let inline updateEntity (collection: ^a[])
                 return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
             }
 
-let addLocationInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
-    let location = deserializeObject<Location>(stringValue)   
+let addLocationInternal (location: Location) (next : HttpFunc) (httpContext: HttpContext) =
     if (location.city |> isNull || location.country |> isNull || location.place |> isNull)
     then setStatusCode 400 next httpContext
     else
@@ -144,12 +149,11 @@ let addLocationInternal stringValue (next : HttpFunc) (httpContext: HttpContext)
 
 let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let! stringValue = httpContext.ReadBodyFromRequest()     
-        return! addLocationInternal stringValue next httpContext
+        let location = deserializeObjectFromStream<Location> httpContext.Request.Body 
+        return! addLocationInternal location next httpContext
     }
 
-let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =     
-    let visit = deserializeObject<Visit>(stringValue) 
+let addVisitInternal (visit: Visit) (next : HttpFunc) (httpContext: HttpContext) =    
     match box visits.[visit.id] with
                             | null -> 
                                     visits.[visit.id] <- visit                                
@@ -160,12 +164,11 @@ let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
 
 let addVisit (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let! stringValue = httpContext.ReadBodyFromRequest()
-        return! addVisitInternal stringValue next httpContext
+        let visit = deserializeObjectFromStream<Visit> httpContext.Request.Body
+        return! addVisitInternal visit next httpContext
     }
 
-let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
-    let user = deserializeObject<User>(stringValue)
+let addUserInternal (user: User) (next : HttpFunc) (httpContext: HttpContext) =
     if (user.email |> isNull || user.first_name |> isNull || user.last_name |> isNull)
     then setStatusCode 400 next httpContext
     else
@@ -178,8 +181,8 @@ let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
 
 let addUser (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let! stringValue = httpContext.ReadBodyFromRequest()
-        return! addUserInternal stringValue next httpContext
+        let user = deserializeObjectFromStream<User> httpContext.Request.Body
+        return! addUserInternal user next httpContext
     }
 
 type UserVisit = { mark: float; visited_at: uint32; place: string }
@@ -327,7 +330,6 @@ let webApp =
 // ---------------------------------
 
 let errorHandler (ex : Exception) (logger : ILogger)=
-    // logger.LogError(ex.ToString())
     setStatusCode 400
 
 // ---------------------------------
