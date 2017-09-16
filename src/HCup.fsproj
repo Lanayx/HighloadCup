@@ -5,14 +5,6 @@
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Juraff/Tasks.fs" />
-    <Compile Include="Juraff/Common.fs" />
-    <Compile Include="Juraff/ComputationExpressions.fs" />
-    <Compile Include="Juraff/FormatExpressions.fs" />
-    <Compile Include="Juraff/HttpContextExtensions.fs" />
-    <Compile Include="Juraff/XmlViewEngine.fs" />
-    <Compile Include="Juraff/HttpHandlers.fs" />
-    <Compile Include="Juraff/Middleware.fs" />
     <Compile Include="Models.fs" />
     <Compile Include="Counter.fs" />
     <Compile Include="RequestCounter.fs" />
@@ -22,7 +14,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Jil" Version="2.15.4" />
+    <PackageReference Include="Giraffe" Version="0.1.0-beta-100" />
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>

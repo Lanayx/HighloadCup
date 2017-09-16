@@ -6,8 +6,8 @@ open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
-open Juraff.HttpHandlers
-open Juraff.Tasks
+open Giraffe.HttpHandlers
+open Giraffe.Tasks
 open Counter
 
 

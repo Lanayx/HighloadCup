@@ -4,10 +4,11 @@ module HCup.Router
 open Microsoft.AspNetCore.Http
 open System.Collections.Generic
 open System
-open Juraff.Tasks
-open Juraff.HttpHandlers
-open Juraff.FormatExpressions
-open Juraff.Common
+open System.Threading.Tasks
+open Giraffe.Tasks
+open Giraffe.HttpHandlers
+open Giraffe.FormatExpressions
+open Giraffe.Common
 
 type Route =
     | User = 0
@@ -48,4 +49,4 @@ let customRoutef (dictIdHandler: IdHandlers) : HttpHandler =
                 tryParseId (pathString.Substring(1,slashIndex-1)) Route.LocationAvg dictIdHandler next ctx
             else 
                 tryParseId (pathString.Substring(1)) Route.Location dictIdHandler next ctx
-        | _-> shortCircuit
+        | _-> Task.FromResult None

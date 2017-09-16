@@ -14,11 +14,11 @@ open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.AspNetCore.Server.Kestrel.Transport
 open Microsoft.Extensions.Logging
-open Juraff.Tasks
-open Juraff.HttpHandlers
-open Juraff.Middleware
-open Juraff.HttpContextExtensions
-open Jil
+open Giraffe.Tasks
+open Giraffe.HttpHandlers
+open Giraffe.Middleware
+open Giraffe.HttpContextExtensions
+open Newtonsoft.Json
 open HCup.Models
 open HCup.RequestCounter
 open HCup.Actors
@@ -50,10 +50,10 @@ let visitUsers = Array.zeroCreate<VisitsCollection> UsersSize
 type UpdateEntity<'a> = 'a -> string -> unit
  
 let inline serializeObject (obj: ^a) =
-    JSON.Serialize(obj)
+    JsonConvert.SerializeObject obj
 
 let inline deserializeObject< ^a > (str: string) =
-    JSON.Deserialize< ^a >(str)
+    JsonConvert.DeserializeObject< ^a > str
 
 let inline jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeObject obj) <| next <| httpContext
@@ -70,39 +70,9 @@ let inline getEntity (collection: ^a[]) id next =
         | null -> setStatusCode 404 next
         | entity -> jsonCustom entity next
 
-let inline isValidLocation (location: Location) =
-    location.id > 0
-    && location.country.Length <=50 
-    && location.city.Length <=50
-
-let inline isValidLocationUpd (location: LocationUpd) =
-    (location.country |> isNull || location.country.Length <=50)
-    && (location.city |> isNull || location.city.Length <=50)
-
-let inline isValidUser (user: User) =
-    user.id > 0
-    && user.email.Length <= 100 
-    && user.first_name.Length <=50 
-    && user.last_name.Length <=50 
-
-let inline isValidUserUpd (user: UserUpd) =
-    (user.email |> isNull || user.email.Length <= 100)
-    && (user.first_name |> isNull || user.first_name.Length <=50)
-    && (user.last_name |> isNull || user.last_name.Length <=50)
-
-let inline isValidVisit (visit: Visit) =
-    visit.id > 0
-    && visit.mark <= 5.0 
-
-let inline isValidVisitUpd (visit: VisitUpd) =
-    not visit.mark.HasValue
-    || visit.mark.Value <= 5.0
-
 let updateLocation (oldLocation:Location) json = 
     checkStringFromRequest json
     let newLocation = deserializeObject<LocationUpd>(json)
-    // if (isValidLocationUpd newLocation |> not)
-    // then failwith "Invalid data"
     if newLocation.distance.HasValue then oldLocation.distance <- newLocation.distance.Value
     if newLocation.city |> isNull |> not then oldLocation.city <- newLocation.city
     if newLocation.place |> isNull |> not then oldLocation.place <- newLocation.place
@@ -111,8 +81,6 @@ let updateLocation (oldLocation:Location) json =
 let updateUser (oldUser:User) json = 
     checkStringFromRequest json
     let newUser = deserializeObject<UserUpd>(json)
-    // if (isValidUserUpd newUser |> not)
-    // then failwith "Invalid data"
     if newUser.first_name |> isNull |> not then oldUser.first_name <- newUser.first_name
     if newUser.last_name |> isNull |> not then oldUser.last_name <- newUser.last_name
     if newUser.birth_date.HasValue then oldUser.birth_date <- newUser.birth_date.Value
@@ -140,9 +108,7 @@ let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) =
 
 let updateVisit (oldVisit:Visit) json = 
     checkStringFromRequest json
-    let newVisit = deserializeObject<VisitUpd>(json)        
-    // if (isValidVisitUpd newVisit |> not)
-    // then failwith "Invalid data"
+    let newVisit = deserializeObject<VisitUpd>(json)   
     oldVisit.user <- getNewUserValue oldVisit newVisit
     oldVisit.location <- getNewLocationValue oldVisit newVisit 
     if newVisit.visited_at.HasValue then oldVisit.visited_at <- newVisit.visited_at.Value 
@@ -169,17 +135,12 @@ let addLocationInternal stringValue (next : HttpFunc) (httpContext: HttpContext)
     if (location.city |> isNull || location.country |> isNull || location.place |> isNull)
     then setStatusCode 400 next httpContext
     else
-        // if (isValidLocation location)
-        //     then
                 match box locations.[location.id] with
                             | null -> 
                                     locations.[location.id] <- location
                                     visitLocations.[location.id] <- VisitsCollection()
                                     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                             | _ -> setStatusCode 400 next httpContext
-            // else
-            //     Console.WriteLine("Invalid location")
-            //     setStatusCode 400 next httpContext   
 
 let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
     task {
@@ -189,18 +150,13 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
 
 let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =     
     let visit = deserializeObject<Visit>(stringValue) 
-    // if (isValidVisit visit)
-    //     then
     match box visits.[visit.id] with
                             | null -> 
                                     visits.[visit.id] <- visit                                
                                     VisitActor.AddLocationVisit visit.location visitLocations.[visit.location] visit.id                         
                                     VisitActor.AddUserVisit visit.user visitUsers.[visit.user] visit.id
                                     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                            | _ -> setStatusCode 400 next httpContext     
-        // else
-        //     Console.WriteLine("Invalid visit")
-        //     setStatusCode 400 next httpContext 
+                            | _ -> setStatusCode 400 next httpContext  
 
 let addVisit (next : HttpFunc) (httpContext: HttpContext) = 
     task {
@@ -213,17 +169,12 @@ let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
     if (user.email |> isNull || user.first_name |> isNull || user.last_name |> isNull)
     then setStatusCode 400 next httpContext
     else
-        // if (isValidUser user)
-        //     then
-    match box users.[user.id] with
+        match box users.[user.id] with
                             | null ->
                                     users.[user.id] <- user
                                     visitUsers.[user.id] <- VisitsCollection()
                                     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                             | _ -> setStatusCode 400 next httpContext 
-            // else
-            //     Console.WriteLine("Invalid user")
-            //     setStatusCode 400 <| next <| httpContext
 
 let addUser (next : HttpFunc) (httpContext: HttpContext) = 
     task {
