@@ -2,6 +2,8 @@ namespace HCup.Models
 
 open System
 open System.Collections.Concurrent
+open Newtonsoft.Json
+open Newtonsoft.Json.Converters
 
 
 type Location() =
@@ -28,6 +30,7 @@ type Locations =
 
 
 [<Struct>]
+[<JsonConverter(typeof<StringEnumConverter>)>]
 type Sex = 
     | m = 0
     | f = 1
