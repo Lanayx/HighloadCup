@@ -105,9 +105,7 @@ let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) =
 
 let updateVisit (oldVisit:Visit) json = 
     checkStringFromRequest json
-    let newVisit = deserializeObject<VisitUpd>(json)        
-    // if (isValidVisitUpd newVisit |> not)
-    // then failwith "Invalid data"
+    let newVisit = deserializeObject<VisitUpd>(json)      
     oldVisit.user <- getNewUserValue oldVisit newVisit
     oldVisit.location <- getNewLocationValue oldVisit newVisit 
     if newVisit.visited_at.HasValue then oldVisit.visited_at <- newVisit.visited_at.Value 

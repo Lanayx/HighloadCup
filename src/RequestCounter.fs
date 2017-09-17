@@ -23,12 +23,13 @@ type RequestCounterMiddleware (next : RequestDelegate,
                                 then GC.Collect(1)
                                 if (reqCount % 7000 = 0)
                                 then
-                                    Console.WriteLine("Gen0={0} Gen1={1} Gen2={2} Time={3} Treads={4}",
+                                    Console.WriteLine("Gen0={0} Gen1={1} Gen2={2} Time={3} Treads={4} ReqCount={5}",
                                         GC.CollectionCount(0),
                                         GC.CollectionCount(1),
                                         GC.CollectionCount(2),                                        
                                         DateTime.Now.ToString("HH:mm:ss.ffff"),
-                                        Process.GetCurrentProcess().Threads.Count))
+                                        Process.GetCurrentProcess().Threads.Count,
+                                        reqCount)
         } :> Task
 
 
