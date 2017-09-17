@@ -29,7 +29,7 @@ type RequestCounterMiddleware (next : RequestDelegate,
                                         GC.CollectionCount(2),                                        
                                         DateTime.Now.ToString("HH:mm:ss.ffff"),
                                         Process.GetCurrentProcess().Threads.Count,
-                                        reqCount)
+                                        reqCount))
         } :> Task
 
 
