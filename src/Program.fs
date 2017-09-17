@@ -67,39 +67,9 @@ let getEntity (collection: 'a[]) id next =
         | null -> setStatusCode 404 next
         | entity -> jsonCustom entity next
 
-let isValidLocation (location: Location) =
-    location.id > 0
-    && location.country.Length <=50 
-    && location.city.Length <=50
-
-let isValidLocationUpd (location: LocationUpd) =
-    (location.country |> isNull || location.country.Length <=50)
-    && (location.city |> isNull || location.city.Length <=50)
-
-let isValidUser (user: User) =
-    user.id > 0
-    && user.email.Length <= 100 
-    && user.first_name.Length <=50 
-    && user.last_name.Length <=50 
-
-let isValidUserUpd (user: UserUpd) =
-    (user.email |> isNull || user.email.Length <= 100)
-    && (user.first_name |> isNull || user.first_name.Length <=50)
-    && (user.last_name |> isNull || user.last_name.Length <=50)
-
-let isValidVisit (visit: Visit) =
-    visit.id > 0
-    && visit.mark <= 5.0 
-
-let isValidVisitUpd (visit: VisitUpd) =
-    not visit.mark.HasValue
-    || visit.mark.Value <= 5.0
-
 let updateLocation (oldLocation:Location) json = 
     checkStringFromRequest json
     let newLocation = deserializeObject<LocationUpd>(json)
-    // if (isValidLocationUpd newLocation |> not)
-    // then failwith "Invalid data"
     if newLocation.distance.HasValue then oldLocation.distance <- newLocation.distance.Value
     if newLocation.city |> isNull |> not then oldLocation.city <- newLocation.city
     if newLocation.place |> isNull |> not then oldLocation.place <- newLocation.place
@@ -108,8 +78,6 @@ let updateLocation (oldLocation:Location) json =
 let updateUser (oldUser:User) json = 
     checkStringFromRequest json
     let newUser = deserializeObject<UserUpd>(json)
-    // if (isValidUserUpd newUser |> not)
-    // then failwith "Invalid data"
     if newUser.first_name |> isNull |> not then oldUser.first_name <- newUser.first_name
     if newUser.last_name |> isNull |> not then oldUser.last_name <- newUser.last_name
     if newUser.birth_date.HasValue then oldUser.birth_date <- newUser.birth_date.Value
@@ -166,16 +134,12 @@ let addLocationInternal stringValue (next : HttpFunc) (httpContext: HttpContext)
     if (location.city |> isNull || location.country |> isNull || location.place |> isNull)
     then setStatusCode 400 next httpContext
     else
-        if (isValidLocation location)
-            then
-                match box locations.[location.id] with
+        match box locations.[location.id] with
                              | null -> 
                                        locations.[location.id] <- location
                                        visitLocations.[location.id] <- VisitsCollection()
                                        setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                             | _ -> setStatusCode 400 next httpContext
-            else
-                setStatusCode 400 next httpContext   
+                             | _ -> setStatusCode 400 next httpContext  
 
 let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
     task {
@@ -185,17 +149,13 @@ let addLocation (next : HttpFunc) (httpContext: HttpContext) =
 
 let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =     
     let visit = deserializeObject<Visit>(stringValue) 
-    if (isValidVisit visit)
-        then
-            match box visits.[visit.id] with
+    match box visits.[visit.id] with
                              | null -> 
                                        visits.[visit.id] <- visit                                
                                        VisitActor.AddLocationVisit visit.location visitLocations.[visit.location] visit.id                         
                                        VisitActor.AddUserVisit visit.user visitUsers.[visit.user] visit.id
                                        setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                             | _ -> setStatusCode 400 next httpContext     
-        else
-            setStatusCode 400 next httpContext 
+                             | _ -> setStatusCode 400 next httpContext   
 
 let addVisit (next : HttpFunc) (httpContext: HttpContext) = 
     task {
@@ -208,16 +168,12 @@ let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
     if (user.email |> isNull || user.first_name |> isNull || user.last_name |> isNull)
     then setStatusCode 400 next httpContext
     else
-        if (isValidUser user)
-            then
-                match box users.[user.id] with
+        match box users.[user.id] with
                              | null ->
                                        users.[user.id] <- user
                                        visitUsers.[user.id] <- VisitsCollection()
                                        setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                              | _ -> setStatusCode 400 next httpContext 
-            else
-                setStatusCode 400 >=> setBodyAsString "Invalidvalue" <| next <| httpContext
 
 let addUser (next : HttpFunc) (httpContext: HttpContext) = 
     task {
@@ -331,7 +287,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                                       |> Seq.filter (filterByQueryAvg query)
                 let avg = match marks with
                               | seq when Seq.isEmpty seq -> 0.0
-                              | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> visit.mark), 5)            
+                              | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> visit.mark), 5, MidpointRounding.AwayFromZero)            
                 task {
                     return! jsonCustom { avg = avg } next httpContext
                 }

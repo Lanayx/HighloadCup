@@ -11,38 +11,24 @@ open Juraff.Tasks
 
 let outstandingRequestCount = ref 0
 
-let private getRequestInfo (ctx : HttpContext) =
-    (ctx.Request.Protocol,
-     ctx.Request.Method,
-     ctx.Request.Path.ToString())
-|||> sprintf "%s %s %s"
-
 type RequestCounterMiddleware (next : RequestDelegate,
                                handler : HttpHandler) =
-
-    do if isNull next then raise (ArgumentNullException("next"))
 
     member __.Invoke (ctx : HttpContext) =
         task {
             let! result = next.Invoke ctx
             Interlocked.Increment(outstandingRequestCount)
             |> (fun reqCount -> 
-                                if (reqCount = 150154 || reqCount = 190154)
+                                if (reqCount = 150150 || reqCount = 190150)
                                 then GC.Collect(1)
-                                if (reqCount % 5000 = 0)
+                                if (reqCount % 7000 = 0)
                                 then
-                                    Console.Write(("Result {0} {1}; Threads {2}; "),
-                                        reqCount,
-                                        DateTime.Now.ToString("HH:mm:ss.ffff"),
-                                        Process.GetCurrentProcess().Threads.Count)
-                                    Console.WriteLine("Gen0={0} Gen1={1} Gen2={2}",
+                                    Console.WriteLine("Gen0={0} Gen1={1} Gen2={2} Time={3} Treads={4}",
                                         GC.CollectionCount(0),
                                         GC.CollectionCount(1),
-                                        GC.CollectionCount(2)))
-
-
-
-            
+                                        GC.CollectionCount(2),                                        
+                                        DateTime.Now.ToString("HH:mm:ss.ffff"),
+                                        Process.GetCurrentProcess().Threads.Count))
         } :> Task
 
 

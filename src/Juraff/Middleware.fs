@@ -14,11 +14,11 @@ open Juraff.HttpHandlers
 /// Logging helper functions
 /// ---------------------------
 
-let private getRequestInfo (ctx : HttpContext) =
-    (ctx.Request.Protocol,
-     ctx.Request.Method,
-     ctx.Request.Path.ToString())
-    |||> sprintf "%s %s %s"
+// let private getRequestInfo (ctx : HttpContext) =
+//     (ctx.Request.Protocol,
+//      ctx.Request.Method,
+//      ctx.Request.Path.ToString())
+//     |||> sprintf "%s %s %s"
 
 /// ---------------------------
 /// Default middleware
