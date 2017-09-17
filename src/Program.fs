@@ -230,9 +230,7 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
                                                                      place = locations.[visit.location].place
                                                                  })
                                       |> Seq.sortBy (fun v -> v.visited_at)                
-                task {
-                    return! jsonCustom { visits = usersVisits } next httpContext
-                }
+                jsonCustom { visits = usersVisits } next httpContext
             | Non -> setStatusCode 400 next httpContext
 
 type Average = { avg: float }
@@ -282,15 +280,13 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
         | location ->
             match getAvgMarkQuery httpContext with
             | Som query ->
-                let marks = visitLocations.[locationId] 
+                let markedVisits = visitLocations.[locationId] 
                                       |> Seq.map (fun key -> visits.[key])   
                                       |> Seq.filter (filterByQueryAvg query)
-                let avg = match marks with
+                let avg = match markedVisits with
                               | seq when Seq.isEmpty seq -> 0.0
-                              | seq -> Math.Round(seq |> Seq.averageBy (fun visit -> visit.mark), 5, MidpointRounding.AwayFromZero)            
-                task {
-                    return! jsonCustom { avg = avg } next httpContext
-                }
+                              | seq -> Math.Round(seq |> Seq.averageBy (fun markedVisit -> markedVisit.mark), 5, MidpointRounding.AwayFromZero)
+                jsonCustom { avg = avg } next httpContext
             | Non -> setStatusCode 400 next httpContext
 
 let getActionsDictionary = Dictionary<Route, IdHandler>()
