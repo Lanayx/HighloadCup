@@ -306,10 +306,7 @@ postActionsDictionary.Add(Route.NewLocation, addLocation)
 let webApp = 
     choose [
         GET >=> customRoutef getActionsDictionary
-        POST >=>
-            choose [
-                customRoutef postActionsDictionary
-            ]
+        POST >=> customRoutef postActionsDictionary
         setStatusCode 404 ]
 
 // ---------------------------------
