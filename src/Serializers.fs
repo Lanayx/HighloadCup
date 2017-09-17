@@ -3,26 +3,33 @@ module HCup.Serializers
 open System
 open System.IO
 open System.Globalization
+open Microsoft.AspNetCore.Http
 open Newtonsoft.Json
 open HCup.Models
 open HCup.Binder
+open Giraffe.Tasks
+open Giraffe.HttpHandlers
 
-let serializeVisit (visit: Visit) =
-    use sw = new StringWriter()
-    use writer = new JsonTextWriter(sw)
-    writer.WriteStartObject()    
-    writer.WritePropertyName("id")
-    writer.WriteValue(visit.id) 
-    writer.WritePropertyName("user")
-    writer.WriteValue(visit.user) 
-    writer.WritePropertyName("location")
-    writer.WriteValue(visit.location) 
-    writer.WritePropertyName("visited_at")
-    writer.WriteValue(visit.visited_at) 
-    writer.WritePropertyName("mark")
-    writer.WriteValue(visit.mark)
-    writer.WriteEndObject()
-    sw.ToString()
+let serializeVisit (visit: Visit) : HttpHandler =
+    fun (next : HttpFunc) (httpContext : HttpContext) ->
+        use sw = new StreamWriter(httpContext.Response.Body)
+        use writer = new JsonTextWriter(sw)
+        writer.WriteStartObject()    
+        writer.WritePropertyName("id")
+        writer.WriteValue(visit.id) 
+        writer.WritePropertyName("user")
+        writer.WriteValue(visit.user) 
+        writer.WritePropertyName("location")
+        writer.WriteValue(visit.location) 
+        writer.WritePropertyName("visited_at")
+        writer.WriteValue(visit.visited_at) 
+        writer.WritePropertyName("mark")
+        writer.WriteValue(visit.mark)
+        writer.WriteEndObject()
+        task {
+            do! writer.FlushAsync()
+            return! next httpContext
+        }
 
 let deserializeVisit (json: string) =
     let visit = Visit()  
@@ -89,57 +96,79 @@ let deserializeVisitUpd (json: string) =
         reader.Close()
         None
 
-let serializeUser (user: User) =
-    use sw = new StringWriter()
-    use writer = new JsonTextWriter(sw)
-    writer.WriteStartObject()    
-    writer.WritePropertyName("id");
-    writer.WriteValue(user.id) 
-    writer.WritePropertyName("first_name")
-    writer.WriteValue(user.first_name) 
-    writer.WritePropertyName("last_name")
-    writer.WriteValue(user.last_name) 
-    writer.WritePropertyName("birth_date")
-    writer.WriteValue(user.birth_date) 
-    writer.WritePropertyName("gender")
-    writer.WriteValue(user.gender.ToString())
-    writer.WritePropertyName("email")
-    writer.WriteValue(user.email)
-    writer.WriteEndObject()
-    sw.ToString()
+let serializeUser (user: User) : HttpHandler =
+    fun (next : HttpFunc) (httpContext : HttpContext) ->
+        use sw = new StreamWriter(httpContext.Response.Body)
+        use writer = new JsonTextWriter(sw)
+        writer.WriteStartObject()    
+        writer.WritePropertyName("id");
+        writer.WriteValue(user.id) 
+        writer.WritePropertyName("first_name")
+        writer.WriteValue(user.first_name) 
+        writer.WritePropertyName("last_name")
+        writer.WriteValue(user.last_name) 
+        writer.WritePropertyName("birth_date")
+        writer.WriteValue(user.birth_date) 
+        writer.WritePropertyName("gender")
+        writer.WriteValue(user.gender.ToString())
+        writer.WritePropertyName("email")
+        writer.WriteValue(user.email)
+        writer.WriteEndObject()
+        task {
+            do! writer.FlushAsync()
+            return! next httpContext
+        }
 
-let deserializeUser (json: string) =
+let rec readUser (reader: JsonTextReader) (user: User)  = task {
+        let! readerAvailable = reader.ReadAsync()
+        if (readerAvailable)
+        then
+            match string reader.Value with
+            | "id" ->
+                 match toParseResult Int32.TryParse (reader.ReadAsString()) with
+                 | Success id -> 
+                    user.id <- id
+                    return! readUser reader user
+                 | _ -> return false
+            | "first_name" ->
+                 user.first_name <- reader.ReadAsString()
+                 return! readUser reader user
+            | "last_name" -> 
+                 user.last_name <- reader.ReadAsString()
+                 return! readUser reader user
+            | "birth_date" ->
+                 match toParseResult Double.TryParse (reader.ReadAsString()) with
+                 | Success birth_date ->
+                    user.birth_date <- birth_date
+                    return! readUser reader user
+                 | _ -> return false
+            | "gender" -> 
+                 match toParseResult Sex.TryParse (reader.ReadAsString()) with
+                 | Success gender -> 
+                    user.gender <- gender
+                    return! readUser reader user
+                 | _ -> return false
+            | "email" -> 
+                 user.email <- reader.ReadAsString()
+                 return! readUser reader user
+            | _ -> return! readUser reader user            
+        else
+            return true        
+    }
+
+let deserializeUser (body: Stream) = task {
     let user = User()  
-    let mutable success = true
-    use sr = new StringReader(json)
+    use sr = new StreamReader(body)
     use reader = new JsonTextReader(sr)
-    while(reader.Read() && success) do
-        match string reader.Value with
-        | "id" ->
-             match toParseResult Int32.TryParse (reader.ReadAsString()) with
-             | Success id -> user.id <- id
-             | _ -> success <- false
-        | "first_name" ->
-             user.first_name <- reader.ReadAsString()
-        | "last_name" -> 
-             user.last_name <- reader.ReadAsString()
-        | "birth_date" ->
-             match toParseResult Double.TryParse (reader.ReadAsString()) with
-             | Success birth_date -> user.birth_date <- birth_date
-             | _ -> success <- false
-        | "gender" -> 
-             match toParseResult Sex.TryParse (reader.ReadAsString()) with
-             | Success gender -> user.gender <- gender
-             | _ -> success <- false
-        | "email" -> 
-             user.email <- reader.ReadAsString()
-        | _ -> ()
+    let! success = readUser reader user
     if success && user.id <> 0 && user.first_name |> isNull |> not && user.last_name |> isNull |> not && 
         user.birth_date<>0.0 && user.gender<> Sex.undef && user.email  |> isNull |> not
-    then Some user 
+    then 
+        return Some user 
     else 
         reader.Close()
-        None
+        return None
+}
 
 let deserializeUserUpd (json: string) =
     let user = UserUpd()  
@@ -175,22 +204,26 @@ let deserializeUserUpd (json: string) =
         reader.Close()
         None
 
-let serializeLocation (location: Location) =
-    use sw = new StringWriter()
-    use writer = new JsonTextWriter(sw)
-    writer.WriteStartObject()    
-    writer.WritePropertyName("id");
-    writer.WriteValue(location.id) 
-    writer.WritePropertyName("distance")
-    writer.WriteValue(location.distance) 
-    writer.WritePropertyName("city")
-    writer.WriteValue(location.city) 
-    writer.WritePropertyName("place")
-    writer.WriteValue(location.place) 
-    writer.WritePropertyName("country")
-    writer.WriteValue(location.country)
-    writer.WriteEndObject()
-    sw.ToString()
+let serializeLocation (location: Location) : HttpHandler =
+    fun (next : HttpFunc) (httpContext : HttpContext) ->
+        use sw = new StreamWriter(httpContext.Response.Body)
+        use writer = new JsonTextWriter(sw)
+        writer.WriteStartObject()    
+        writer.WritePropertyName("id");
+        writer.WriteValue(location.id) 
+        writer.WritePropertyName("distance")
+        writer.WriteValue(location.distance) 
+        writer.WritePropertyName("city")
+        writer.WriteValue(location.city) 
+        writer.WritePropertyName("place")
+        writer.WriteValue(location.place) 
+        writer.WritePropertyName("country")
+        writer.WriteValue(location.country)
+        writer.WriteEndObject()
+        task {
+            do! writer.FlushAsync()
+            return! next httpContext
+        }
 
 let deserializeLocation (json: string) =
     let location = Location()  
@@ -251,31 +284,38 @@ let deserializeLocationUpd (json: string) =
         reader.Close()
         None
 
-let serializeAverage (average: Average) =
-    use sw = new StringWriter()
-    use writer = new JsonTextWriter(sw)
-    writer.WriteStartObject()    
-    writer.WritePropertyName("avg")
-    writer.WriteValue(average.avg)
-    writer.WriteEndObject()
-    sw.ToString()
+let serializeAverage (average: Average) : HttpHandler =
+    fun (next : HttpFunc) (httpContext : HttpContext) ->
+        use sw = new StreamWriter(httpContext.Response.Body)
+        use writer = new JsonTextWriter(sw)
+        writer.WriteStartObject()    
+        writer.WritePropertyName("avg")
+        writer.WriteValue(average.avg)
+        writer.WriteEndObject()
+        task {
+            do! writer.FlushAsync()
+            return! next httpContext
+        }
 
-let serializeUserVisits (userVisits: UserVisits) =
-    use sw = new StringWriter()
-    use writer = new JsonTextWriter(sw)
-    writer.WriteStartObject()    
-    writer.WritePropertyName("visits");
-    writer.WriteStartArray();
-    for userVisit in userVisits.visits do
-        writer.WriteStartObject()
-        writer.WritePropertyName("mark")
-        writer.WriteValue(userVisit.mark)
-        writer.WritePropertyName("visited_at")
-        writer.WriteValue(userVisit.visited_at)
-        writer.WritePropertyName("place")
-        writer.WriteValue(userVisit.place)
-        writer.WriteEndObject()    
-    writer.WriteEndArray()
-    writer.WriteEndObject()
-    sw.ToString()
-
+let serializeUserVisits (userVisits: UserVisits) : HttpHandler =
+    fun (next : HttpFunc) (httpContext : HttpContext) ->
+        use sw = new StreamWriter(httpContext.Response.Body)
+        use writer = new JsonTextWriter(sw)
+        writer.WriteStartObject()    
+        writer.WritePropertyName("visits");
+        writer.WriteStartArray();
+        for userVisit in userVisits.visits do
+            writer.WriteStartObject()
+            writer.WritePropertyName("mark")
+            writer.WriteValue(userVisit.mark)
+            writer.WritePropertyName("visited_at")
+            writer.WriteValue(userVisit.visited_at)
+            writer.WritePropertyName("place")
+            writer.WriteValue(userVisit.place)
+            writer.WriteEndObject()    
+        writer.WriteEndArray()
+        writer.WriteEndObject()
+        task {
+            do! writer.FlushAsync()
+            return! next httpContext
+        }

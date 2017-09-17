@@ -55,11 +55,11 @@ type UpdateEntity<'a> = 'a -> string -> bool
 let inline deserializeObject< 'a > (str: string) =
     JsonConvert.DeserializeObject< 'a > str
 
-let inline jsonCustom (serializeFun: 'a -> string) (obj: 'a) (next : HttpFunc) (httpContext: HttpContext) =
-    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeFun obj) <| next <| httpContext
+let inline jsonCustom serializeFun (obj: 'a) (next : HttpFunc) (httpContext: HttpContext) =
+    setHttpHeader "Content-Type" "application/json" >=> serializeFun obj <| next <| httpContext
 
 
-let getEntity (serializeFun: 'a -> string) (collection: 'a[]) id next = 
+let getEntity serializeFun (collection: 'a[]) id next = 
     if (id > collection.Length)
     then setStatusCode 404 next
     else
@@ -177,8 +177,7 @@ let addVisit (next : HttpFunc) (httpContext: HttpContext) =
         return! addVisitInternal visitString next httpContext
     }
 
-let addUserInternal userString (next : HttpFunc) (httpContext: HttpContext) =
-    let userOption = deserializeUser userString
+let addUserInternal (userOption: Option<User>) (next : HttpFunc) (httpContext: HttpContext) =
     match userOption with
     | None -> setStatusCode 400 next httpContext
     | Some user ->
@@ -191,8 +190,8 @@ let addUserInternal userString (next : HttpFunc) (httpContext: HttpContext) =
 
 let addUser (next : HttpFunc) (httpContext: HttpContext) = 
     task {
-        let! userString = httpContext.ReadBodyFromRequest()
-        return! addUserInternal userString next httpContext
+        let! userOption = deserializeUser httpContext.Request.Body
+        return! addUserInternal userOption next httpContext
     }
 
 [<Struct>]
@@ -346,6 +345,7 @@ let errorHandler (ex : Exception) (logger : ILogger)=
 // ---------------------------------
 
 let configureApp (app : IApplicationBuilder) = 
+    app.UseResponseBuffering() |> ignore
     app.UseRequestCounter analyze
     app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
