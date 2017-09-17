@@ -32,16 +32,3 @@ let strSegment (str : string) =
 let inline serializeJson x = JsonConvert.SerializeObject x
 
 let inline deserializeJson<'T> str = JsonConvert.DeserializeObject<'T> str
-
-let serializeXml x =
-    use stream = new MemoryStream()
-    let settings = XmlWriterSettings(Encoding = Encoding.UTF8, Indent = true, OmitXmlDeclaration = false)
-    use writer = XmlWriter.Create(stream, settings)
-    let serializer = XmlSerializer(x.GetType())
-    serializer.Serialize(writer, x)
-    stream.ToArray()
-
-let deserializeXml<'T> str =
-    let serializer = XmlSerializer(typeof<'T>)
-    use reader = new StringReader(str)
-    serializer.Deserialize reader :?> 'T

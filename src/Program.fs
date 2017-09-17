@@ -139,7 +139,7 @@ let addLocationInternal stringValue (next : HttpFunc) (httpContext: HttpContext)
                                        setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                              | _ -> setStatusCode 400 next httpContext  
 
-let addLocation (next : HttpFunc) (httpContext: HttpContext) = 
+let addLocation (id:int) (next : HttpFunc) (httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()     
         return! addLocationInternal stringValue next httpContext
@@ -155,7 +155,7 @@ let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
                                        setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                              | _ -> setStatusCode 400 next httpContext   
 
-let addVisit (next : HttpFunc) (httpContext: HttpContext) = 
+let addVisit (id:int) (next : HttpFunc) (httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()
         return! addVisitInternal stringValue next httpContext
@@ -173,7 +173,7 @@ let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
                                        setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                              | _ -> setStatusCode 400 next httpContext 
 
-let addUser (next : HttpFunc) (httpContext: HttpContext) = 
+let addUser (id:int) (next : HttpFunc) (httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()
         return! addUserInternal stringValue next httpContext
@@ -298,6 +298,9 @@ let postActionsDictionary = Dictionary<Route, IdHandler>()
 postActionsDictionary.Add(Route.Location, updateEntity locations updateLocation)
 postActionsDictionary.Add(Route.User, updateEntity users updateUser)
 postActionsDictionary.Add(Route.Visit, updateEntity visits updateVisit)
+postActionsDictionary.Add(Route.NewVisit, addVisit)
+postActionsDictionary.Add(Route.NewUser, addUser)
+postActionsDictionary.Add(Route.NewLocation, addLocation)
 
 
 let webApp = 
@@ -305,9 +308,6 @@ let webApp =
         GET >=> customRoutef getActionsDictionary
         POST >=>
             choose [
-                route "/locations/new" >=> addLocation
-                route "/users/new" >=> addUser
-                route "/visits/new" >=> addVisit
                 customRoutef postActionsDictionary
             ]
         setStatusCode 404 ]
