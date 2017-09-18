@@ -412,11 +412,12 @@ let main argv =
     else ZipFile.ExtractToDirectory("data.zip","./data")
     loadData "./data"
     GC.Collect(2)
-
+    GC.TryStartNoGCRegion(1000000000L) |> ignore
     WebHostBuilder()
         .UseKestrel(Action<KestrelServerOptions> configureKestrel)
         // .UseUrls("http://0.0.0.0:80")
         .Configure(Action<IApplicationBuilder> configureApp)
         .Build()
         .Run()
+    GC.EndNoGCRegion()
     0
