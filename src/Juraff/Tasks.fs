@@ -37,7 +37,7 @@ module TaskBuilder =
         let mutable continuation = fun () -> firstStep
         /// Returns next pending awaitable or null if exiting (including tail call).
         let nextAwaitable() =
-            try
+            // try
                 match continuation() with
                 | Return r ->
                     methodBuilder.SetResult(Task.FromResult(r))
@@ -48,10 +48,10 @@ module TaskBuilder =
                 | Await (await, next) ->
                     continuation <- next
                     await
-            with
-            | exn ->
-                methodBuilder.SetException(exn)
-                null
+            // with
+            // | exn ->
+            //     methodBuilder.SetException(exn)
+            //     null
         let mutable self = this
 
         /// Start execution as a `Task<Task<'a>>`.

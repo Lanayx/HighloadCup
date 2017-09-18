@@ -49,8 +49,16 @@ type UpdateEntity<'a> = 'a -> string -> bool
 let inline serializeObject obj =
     JSON.Serialize(obj)
 
-let inline deserializeObject<'a> (str: string) =
+let inline deserializeObjectUnsafe<'a> (str: string) =
     JSON.Deserialize<'a>(str)
+
+let inline deserializeObject<'a> (str: string) =
+    try
+        Some <| JSON.Deserialize<'a>(str)        
+    with
+    | exn ->
+        None
+
 
 let jsonCustom obj (next : HttpFunc) (httpContext: HttpContext) =
     setHttpHeader "Content-Type" "application/json" >=> setBodyAsString (serializeObject obj) <| next <| httpContext
@@ -69,25 +77,29 @@ let getEntity (collection: 'a[]) id next =
 let updateLocation (oldLocation:Location) json = 
     if checkStringFromRequest json
     then
-        let newLocation = deserializeObject<LocationUpd>(json)
-        if newLocation.distance.HasValue then oldLocation.distance <- newLocation.distance.Value
-        if newLocation.city |> isNull |> not then oldLocation.city <- newLocation.city
-        if newLocation.place |> isNull |> not then oldLocation.place <- newLocation.place
-        if newLocation.country |> isNull |> not then oldLocation.country <- newLocation.country
-        true
+        match deserializeObject<LocationUpd>(json) with
+        | Some newLocation ->
+            if newLocation.distance.HasValue then oldLocation.distance <- newLocation.distance.Value
+            if newLocation.city |> isNull |> not then oldLocation.city <- newLocation.city
+            if newLocation.place |> isNull |> not then oldLocation.place <- newLocation.place
+            if newLocation.country |> isNull |> not then oldLocation.country <- newLocation.country
+            true
+        | None -> false
     else    
         false
 
 let updateUser (oldUser:User) json = 
     if checkStringFromRequest json
     then
-        let newUser = deserializeObject<UserUpd>(json)
-        if newUser.first_name |> isNull |> not then oldUser.first_name <- newUser.first_name
-        if newUser.last_name |> isNull |> not then oldUser.last_name <- newUser.last_name
-        if newUser.birth_date.HasValue then oldUser.birth_date <- newUser.birth_date.Value
-        if newUser.gender.HasValue then oldUser.gender <- newUser.gender.Value
-        if newUser.email |> isNull |> not then oldUser.email <- newUser.email
-        true
+        match deserializeObject<UserUpd>(json) with
+        | Some newUser ->
+            if newUser.first_name |> isNull |> not then oldUser.first_name <- newUser.first_name
+            if newUser.last_name |> isNull |> not then oldUser.last_name <- newUser.last_name
+            if newUser.birth_date.HasValue then oldUser.birth_date <- newUser.birth_date.Value
+            if newUser.gender.HasValue then oldUser.gender <- newUser.gender.Value
+            if newUser.email |> isNull |> not then oldUser.email <- newUser.email
+            true
+        | None -> false
     else
         false
 
@@ -113,12 +125,14 @@ let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) =
 let updateVisit (oldVisit:Visit) json = 
     if checkStringFromRequest json
     then
-        let newVisit = deserializeObject<VisitUpd>(json)      
-        oldVisit.user <- getNewUserValue oldVisit newVisit
-        oldVisit.location <- getNewLocationValue oldVisit newVisit 
-        if newVisit.visited_at.HasValue then oldVisit.visited_at <- newVisit.visited_at.Value 
-        if newVisit.mark.HasValue then oldVisit.mark <- newVisit.mark.Value
-        true
+        match deserializeObject<VisitUpd>(json) with
+        | Some newVisit ->      
+            oldVisit.user <- getNewUserValue oldVisit newVisit
+            oldVisit.location <- getNewLocationValue oldVisit newVisit 
+            if newVisit.visited_at.HasValue then oldVisit.visited_at <- newVisit.visited_at.Value 
+            if newVisit.mark.HasValue then oldVisit.mark <- newVisit.mark.Value
+            true
+        | None -> false
     else
         false
 
@@ -140,16 +154,18 @@ let updateEntity (collection: 'a[])
             }
 
 let addLocationInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
-    let location = deserializeObject<Location>(stringValue)   
-    if (location.city |> isNull || location.country |> isNull || location.place |> isNull)
-    then setStatusCode 400 next httpContext
-    else
-        match box locations.[location.id] with
-                             | null -> 
-                                       locations.[location.id] <- location
-                                       visitLocations.[location.id] <- VisitsCollection()
-                                       setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                             | _ -> setStatusCode 400 next httpContext  
+    match deserializeObject<Location>(stringValue) with
+    | Some location ->  
+        if (location.city |> isNull || location.country |> isNull || location.place |> isNull)
+        then setStatusCode 400 next httpContext
+        else
+            match box locations.[location.id] with
+                            | null -> 
+                                    locations.[location.id] <- location
+                                    visitLocations.[location.id] <- VisitsCollection()
+                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
+                            | _ -> setStatusCode 400 next httpContext  
+    | None -> setStatusCode 400 next httpContext
 
 let addLocation (id:int) (next : HttpFunc) (httpContext: HttpContext) = 
     task {
@@ -158,14 +174,16 @@ let addLocation (id:int) (next : HttpFunc) (httpContext: HttpContext) =
     }
 
 let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =     
-    let visit = deserializeObject<Visit>(stringValue) 
-    match box visits.[visit.id] with
-                             | null -> 
-                                       visits.[visit.id] <- visit                                
-                                       VisitActor.AddLocationVisit visit.location visitLocations.[visit.location] visit.id                         
-                                       VisitActor.AddUserVisit visit.user visitUsers.[visit.user] visit.id
-                                       setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                             | _ -> setStatusCode 400 next httpContext   
+    match deserializeObject<Visit>(stringValue) with
+    | Some visit ->
+        match box visits.[visit.id] with
+                            | null -> 
+                                    visits.[visit.id] <- visit                                
+                                    VisitActor.AddLocationVisit visit.location visitLocations.[visit.location] visit.id                         
+                                    VisitActor.AddUserVisit visit.user visitUsers.[visit.user] visit.id
+                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
+                            | _ -> setStatusCode 400 next httpContext 
+    | None -> setStatusCode 400 next httpContext
 
 let addVisit (id:int) (next : HttpFunc) (httpContext: HttpContext) = 
     task {
@@ -174,16 +192,18 @@ let addVisit (id:int) (next : HttpFunc) (httpContext: HttpContext) =
     }
 
 let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
-    let user = deserializeObject<User>(stringValue)
-    if (user.email |> isNull || user.first_name |> isNull || user.last_name |> isNull)
-    then setStatusCode 400 next httpContext
-    else
-        match box users.[user.id] with
+    match deserializeObject<User>(stringValue) with
+    | Some user ->
+        if (user.email |> isNull || user.first_name |> isNull || user.last_name |> isNull)
+        then setStatusCode 400 next httpContext
+        else
+            match box users.[user.id] with
                              | null ->
                                        users.[user.id] <- user
                                        visitUsers.[user.id] <- VisitsCollection()
                                        setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
                              | _ -> setStatusCode 400 next httpContext 
+    | None -> setStatusCode 400 next httpContext
 
 let addUser (id:int) (next : HttpFunc) (httpContext: HttpContext) = 
     task {
@@ -335,7 +355,7 @@ let errorHandler (ex : Exception) (logger : ILogger)=
 
 let configureApp (app : IApplicationBuilder) = 
     app.UseRequestCounter webApp
-    app.UseGiraffeErrorHandler errorHandler
+    // app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
 let configureKestrel (options : KestrelServerOptions) =
@@ -345,7 +365,7 @@ let configureKestrel (options : KestrelServerOptions) =
 let loadData folder =
 
     let locations = Directory.EnumerateFiles(folder, "locations_*.json")
-                    |> Seq.map (File.ReadAllText >> deserializeObject<Locations>)
+                    |> Seq.map (File.ReadAllText >> deserializeObjectUnsafe<Locations>)
                     |> Seq.collect (fun locationsObj -> locationsObj.locations)
                     |> Seq.map (fun location -> 
                         locations.[location.id] <- location
@@ -354,7 +374,7 @@ let loadData folder =
     Console.Write("Locations {0} ", locations.Length)
     
     let users = Directory.EnumerateFiles(folder, "users_*.json")
-                |> Seq.map (File.ReadAllText >> deserializeObject<Users>)
+                |> Seq.map (File.ReadAllText >> deserializeObjectUnsafe<Users>)
                 |> Seq.collect (fun usersObj -> usersObj.users)
                 |> Seq.map (fun user -> 
                     users.[user.id] <- user
@@ -363,7 +383,7 @@ let loadData folder =
     Console.Write("Users {0} ", users.Length)
 
     let visits = Directory.EnumerateFiles(folder, "visits_*.json")
-                |> Seq.map (File.ReadAllText >> deserializeObject<Visits>)
+                |> Seq.map (File.ReadAllText >> deserializeObjectUnsafe<Visits>)
                 |> Seq.collect (fun visitObj -> visitObj.visits)
                 |> Seq.map (fun visit -> 
                     visits.[visit.id] <- visit
