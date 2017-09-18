@@ -34,5 +34,5 @@ type HttpContext with
 
     member this.ReadBodyFromRequest() =
         let body = this.Request.Body
-        use reader = new StreamReader(body, true)
+        use reader = new StreamReader(body)
         reader.ReadToEndAsync()
