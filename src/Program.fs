@@ -411,13 +411,11 @@ let main argv =
         ZipFile.ExtractToDirectory("/tmp/data/data.zip","./data")
     else ZipFile.ExtractToDirectory("data.zip","./data")
     loadData "./data"
-    GC.Collect(2)
-    GC.TryStartNoGCRegion(1000000000L) |> ignore
+    GC.Collect(2, GCCollectionMode.Forced, true, true)
     WebHostBuilder()
         .UseKestrel(Action<KestrelServerOptions> configureKestrel)
         // .UseUrls("http://0.0.0.0:80")
         .Configure(Action<IApplicationBuilder> configureApp)
         .Build()
         .Run()
-    GC.EndNoGCRegion()
     0
