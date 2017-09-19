@@ -411,7 +411,7 @@ let main argv =
         ZipFile.ExtractToDirectory("/tmp/data/data.zip","./data")
     else ZipFile.ExtractToDirectory("data.zip","./data")
     loadData "./data"
-    GC.Collect(2, GCCollectionMode.Forced, true, true)
+    GC.Collect(2)
     WebHostBuilder()
         .UseKestrel(Action<KestrelServerOptions> configureKestrel)
         // .UseUrls("http://0.0.0.0:80")
