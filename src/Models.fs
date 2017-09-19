@@ -40,8 +40,8 @@ type Locations =
 
 [<Struct>]
 type Sex = 
-    | m = 0
-    | f = 1
+    | m = 0uy
+    | f = 1uy
 
 [<CLIMutable>]
 type UserUpd =
@@ -115,3 +115,9 @@ type Visits =
 type StructOption<'a> =
     | Som of 'a
     | Non
+
+[<Struct>]
+type UserVisit = { mark: float; visited_at: uint32; place: string }
+type UserVisits = { visits: seq<UserVisit> }
+[<Struct>]
+type Average = { avg: float }

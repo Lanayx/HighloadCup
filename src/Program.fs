@@ -273,8 +273,6 @@ let addUser (id:int) (next : HttpFunc) (httpContext: HttpContext) =
         return! addUserInternal stringValue next httpContext
     }
 
-type UserVisit = { mark: float; visited_at: uint32; place: string }
-type UserVisits = { visits: seq<UserVisit> }
 [<Struct>]
 type QueryVisit = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; country: string; toDistance: ParseResult<uint8>}
 
@@ -320,13 +318,12 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
                                                                      place = locations.[visit.location].place
                                                                  })
                                       |> Seq.sortBy (fun v -> v.visited_at)   
-                let str = JSON.Serialize({ visits = usersVisits })             
+                let str = serializeVisits { visits = usersVisits }            
                 jsonCustom str next httpContext
             | Non -> setStatusCode 400 next httpContext       
         | _ ->
             setStatusCode 404 next httpContext
 
-type Average = { avg: float }
 [<Struct>]
 type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<Sex>}
 
@@ -377,8 +374,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                 let avg = match markedVisits with
                               | seq when Seq.isEmpty seq -> 0.0
                               | seq -> Math.Round(seq |> Seq.averageBy (fun markedVisit -> markedVisit.mark), 5, MidpointRounding.AwayFromZero)
-                let str = JSON.Serialize({ avg = avg })
-                jsonCustom str next httpContext
+                jsonCustom (serializeAvg { avg = avg }) next httpContext
             | Non -> setStatusCode 400 next httpContext        
         | _ ->
             setStatusCode 404 <| next <| httpContext
