@@ -4,17 +4,28 @@ open System
 open System.Collections.Concurrent
 
 
-type Location() =
+type Location =
+    struct
+        val id: int32
+        val distance : uint8
+        val place: string
+        val city: string
+        val country: string
+        new(_id, _distance, _place, _city, _country) = { id = _id; distance=_distance; place=_place; city=_city; country =_country }
+    end
+
+type LocationOld() =
         [<DefaultValue>]val mutable id: int32
-        [<DefaultValue>]val mutable distance : uint16
+        [<DefaultValue>]val mutable distance : uint8
         [<DefaultValue>]val mutable city: string
         [<DefaultValue>]val mutable place: string
         [<DefaultValue>]val mutable country: string
 
+
 [<CLIMutable>]
 type LocationUpd =
     {
-        distance : Nullable<uint16>
+        distance : Nullable<uint8>
         city: string
         place: string
         country: string
@@ -23,7 +34,7 @@ type LocationUpd =
 [<CLIMutable>]
 type Locations =
     {
-        locations : Location[]
+        locations : LocationOld[]
     }
 
 
@@ -42,7 +53,18 @@ type UserUpd =
         email: string
     }
 
-type User() =
+type User =
+    struct
+        val id: int32
+        val first_name : string
+        val last_name: string
+        val birth_date: float
+        val gender: Sex
+        val email: string
+        new(_id, _first_name, _last_name, _birth_date, _gender, _email) = { id = _id; first_name=_first_name; last_name=_last_name; birth_date=_birth_date; gender =_gender; email = _email }
+    end
+
+type UserOld() =
         [<DefaultValue>]val mutable id: int32
         [<DefaultValue>]val mutable first_name : string
         [<DefaultValue>]val mutable last_name: string
@@ -53,7 +75,7 @@ type User() =
 [<CLIMutable>]
 type Users =
     {
-        users : User[]
+        users : UserOld[]
     }
 
 [<CLIMutable>]
@@ -65,7 +87,18 @@ type VisitUpd =
         mark: Nullable<float>
     }
 
-type Visit() =
+type Visit =
+    struct
+        val id: int32
+        val user : int32
+        val location: int32
+        val visited_at: uint32
+        val mark: float
+        new(_id, _user, _location, _visited_at, _mark) = { id = _id; user=_user; location=_location; visited_at=_visited_at; mark =_mark }
+
+    end
+
+type VisitOld() =
         [<DefaultValue>]val mutable id: int32
         [<DefaultValue>]val mutable user : int32
         [<DefaultValue>]val mutable location: int32
@@ -75,7 +108,7 @@ type Visit() =
 [<CLIMutable>]
 type Visits =
     {
-        visits : Visit[]
+        visits : VisitOld[]
     }
 
 [<Struct>]
