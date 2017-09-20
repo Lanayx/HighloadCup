@@ -34,7 +34,7 @@ type VisitActor () =
                 // do the core logic
                 match action with
                 | AddVisit -> addVisitRegular collection id
-                | RemoveVisit -> addVisitRegular collection id
+                | RemoveVisit -> removeVisitRegular collection id
 
                 // loop to top
                 return! messageLoop () 
