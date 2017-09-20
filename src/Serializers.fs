@@ -31,10 +31,10 @@ let inline serializeVisit (visit: Visit) =
         .Append(",\"visited_at\":").Append(visit.visited_at)
         .Append("}").ToString()
 
-let inline serializeVisits (visits: UserVisits) =
+let inline serializeVisits (visits: seq<UserVisit>) =
     let sb = StringBuilder().Append("{\"visits\":[")
     let mutable start = true
-    for visit in visits.visits do
+    for visit in visits do
         (if start
         then
             start <- false 
@@ -47,7 +47,7 @@ let inline serializeVisits (visits: UserVisits) =
           .Append("\"}") |> ignore
     sb.Append("]}").ToString()
 
-let inline serializeAvg (avg: Average) =
+let inline serializeAvg (avg: float) =
     StringBuilder()
-        .Append("{\"avg\":").Append(avg.avg.ToString(System.Globalization.CultureInfo.InvariantCulture))
+        .Append("{\"avg\":").Append(avg.ToString(System.Globalization.CultureInfo.InvariantCulture))
         .Append("}").ToString()

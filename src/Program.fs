@@ -317,9 +317,8 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
                                                                      visited_at = visit.visited_at
                                                                      place = locations.[visit.location].place
                                                                  })
-                                      |> Seq.sortBy (fun v -> v.visited_at)   
-                let str = serializeVisits { visits = usersVisits }            
-                jsonCustom str next httpContext
+                                      |> Seq.sortBy (fun v -> v.visited_at) 
+                jsonCustom (serializeVisits usersVisits) next httpContext
             | Non -> setStatusCode 400 next httpContext       
         | _ ->
             setStatusCode 404 next httpContext
@@ -374,7 +373,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                 let avg = match markedVisits with
                               | seq when Seq.isEmpty seq -> 0.0
                               | seq -> Math.Round(seq |> Seq.averageBy (fun markedVisit -> markedVisit.mark), 5, MidpointRounding.AwayFromZero)
-                jsonCustom (serializeAvg { avg = avg }) next httpContext
+                jsonCustom (serializeAvg avg) next httpContext
             | Non -> setStatusCode 400 next httpContext        
         | _ ->
             setStatusCode 404 <| next <| httpContext

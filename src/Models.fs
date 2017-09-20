@@ -118,6 +118,3 @@ type StructOption<'a> =
 
 [<Struct>]
 type UserVisit = { mark: float; visited_at: uint32; place: string }
-type UserVisits = { visits: seq<UserVisit> }
-[<Struct>]
-type Average = { avg: float }
