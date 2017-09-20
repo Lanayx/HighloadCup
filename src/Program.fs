@@ -45,7 +45,7 @@ let users = Array.zeroCreate<User> UsersSize
 let visits = Array.zeroCreate<Visit> VisitsSize
 
 let locationVisits = Array.zeroCreate<VisitsCollection> LocationsSize
-let userVisits = Array.zeroCreate<VisitsCollection> UsersSize
+let userVisits = Array.zeroCreate<VisitsCollectionSorted> UsersSize
 
 type UpdateEntity<'a> = 'a -> string -> bool
 type UpdateEntityStr<'a> = 'a -> string -> StructOption<'a> 
@@ -127,12 +127,18 @@ let updateUser (oldUser:User) json =
         Non
 
 let getNewUserValue (oldValue: Visit) (newValue: VisitUpd) = 
-    if (newValue.user.HasValue)
+    if newValue.user.HasValue
     then 
-        VisitActor.RemoveUserVisit oldValue.user userVisits.[oldValue.user] oldValue.id
-        VisitActor.AddUserVisit newValue.user.Value userVisits.[newValue.user.Value] oldValue.id
+        VisitActor.RemoveUserVisit oldValue.user userVisits.[oldValue.user] oldValue.id oldValue.visited_at
+        let visitedAt = if newValue.visited_at.HasValue then newValue.visited_at.Value else oldValue.visited_at
+        VisitActor.AddUserVisit newValue.user.Value userVisits.[newValue.user.Value] oldValue.id visitedAt
         newValue.user.Value
-    else 
+    else if (newValue.visited_at.HasValue)
+    then
+        VisitActor.RemoveUserVisit oldValue.user userVisits.[oldValue.user] oldValue.id oldValue.visited_at
+        VisitActor.AddUserVisit oldValue.user userVisits.[oldValue.user] oldValue.id newValue.visited_at.Value
+        oldValue.user
+    else
         oldValue.user
 
 let getNewLocationValue (oldValue: Visit) (newValue: VisitUpd) = 
@@ -243,7 +249,7 @@ let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
         | _ -> 
               visits.[visit.id] <- Visit(visit.id, visit.user, visit.location, visit.visited_at, visit.mark)                                
               VisitActor.AddLocationVisit visit.location locationVisits.[visit.location] visit.id                         
-              VisitActor.AddUserVisit visit.user userVisits.[visit.user] visit.id
+              VisitActor.AddUserVisit visit.user userVisits.[visit.user] visit.id visit.visited_at
               setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
     | None -> setStatusCode 400 next httpContext
 
@@ -263,7 +269,7 @@ let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
                              | exUser when exUser.id > 0 -> setStatusCode 400 next httpContext 
                              | _ ->
                                        users.[user.id] <- User(user.id, user.first_name, user.last_name, user.birth_date, user.gender, user.email)
-                                       userVisits.[user.id] <- VisitsCollection()
+                                       userVisits.[user.id] <- VisitsCollectionSorted()
                                        setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
     | None -> setStatusCode 400 next httpContext
 
@@ -292,14 +298,11 @@ let getUserVisitsQuery (httpContext: HttpContext) =
             }  
 
 let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
-    let location = 
-        if (String.IsNullOrEmpty(query.country) |> not || query.toDistance <> ParseResult.Empty)
-        then Some locations.[visit.location]
-        else None
+    let location = locations.[visit.location]
     checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
         && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
-        && (checkParseResult query.toDistance (fun toDistance -> location.Value.distance < toDistance))
-        && (String.IsNullOrEmpty(query.country) || location.Value.country = query.country)
+        && (checkParseResult query.toDistance (fun toDistance -> location.distance < toDistance))
+        && (String.IsNullOrEmpty(query.country) || location.country = query.country)
 
 let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) = 
     if (userId > users.Length)
@@ -310,14 +313,14 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
             match getUserVisitsQuery httpContext with
             | Som query ->
                 let usersVisits = userVisits.[userId] 
-                                      |> Seq.map (fun key -> visits.[key])   
+                                      |> Seq.map (fun kv -> visits.[kv.Value])   
                                       |> Seq.filter (filterByQueryVisit query)
-                                      |> Seq.map (fun visit -> {
+                                      |> Seq.map (fun visit ->
+                                                                {
                                                                      mark = visit.mark
                                                                      visited_at = visit.visited_at
                                                                      place = locations.[visit.location].place
                                                                  })
-                                      |> Seq.sortBy (fun v -> v.visited_at) 
                 jsonCustom (serializeVisits usersVisits) next httpContext
             | Non -> setStatusCode 400 next httpContext       
         | _ ->
@@ -438,7 +441,7 @@ let loadData folder =
                 |> Seq.collect (fun usersObj -> usersObj.users)
                 |> Seq.map (fun user -> 
                     users.[user.id] <- User(user.id, user.first_name, user.last_name, user.birth_date, user.gender, user.email)
-                    userVisits.[user.id] <- VisitsCollection())
+                    userVisits.[user.id] <- VisitsCollectionSorted())
                 |> Seq.toList
     Console.Write("Users {0} ", users.Length)
 
@@ -449,7 +452,7 @@ let loadData folder =
                 |> Seq.map (fun visit -> 
                     visits.[visit.id] <- Visit(visit.id, visit.user, visit.location, visit.visited_at, visit.mark)
                     locationVisits.[visit.location].Add(visit.id) |> ignore
-                    userVisits.[visit.user].Add(visit.id) |> ignore) 
+                    userVisits.[visit.user].Add(visit.visited_at, visit.id) |> ignore) 
                 |> Seq.toList
     Console.WriteLine("Visits: {0}", visits.Length)
 

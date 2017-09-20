@@ -59,7 +59,7 @@ let customGetRoutef (dictIdHandler: IdHandlers) : HttpHandler =
 
 let inline getPostRoute newRoute updateRoute (dictIdHandler: IdHandlers) (remaining: PathString ref) =
     let pathString = remaining.Value.Value
-    if pathString.Equals("/new")
+    if pathString.Equals("/new",StringComparison.Ordinal)
     then dictIdHandler.[newRoute] 0
     else tryParseId (pathString.Substring(1)) updateRoute dictIdHandler
 
