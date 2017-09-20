@@ -21,7 +21,7 @@ type RequestCounterMiddleware (next : RequestDelegate,
             |> (fun reqCount -> 
                                 if (reqCount = 150150 || reqCount = 190150)
                                 then GC.Collect(1)
-                                if (reqCount % 10000 = 0)
+                                if (reqCount &&& 8191 = 0)
                                 then
                                     Console.WriteLine("Gen0={0} Gen1={1} Gen2={2} Alloc={3} Time={4} Treads={5} Mem={6} ReqCount={7}",
                                         GC.CollectionCount(0),
