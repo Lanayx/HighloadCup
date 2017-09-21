@@ -273,9 +273,9 @@ let addUser (id:int) (next : HttpFunc) (httpContext: HttpContext) =
 type QueryVisit = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; country: string; toDistance: ParseResult<uint8>}
 
 let getUserVisitsQuery (httpContext: HttpContext) =
-    let fromDate = queryNullableParse ParseResult.Empty "fromDate" UInt32.TryParse httpContext    
-    let toDate = queryNullableParse fromDate "toDate" UInt32.TryParse httpContext
-    let toDistance = queryNullableParse toDate "toDistance" Byte.TryParse httpContext
+    let fromDate = queryNullableParse ParseResult.Empty "fromDate" uint32Parse httpContext    
+    let toDate = queryNullableParse fromDate "toDate" uint32Parse httpContext
+    let toDistance = queryNullableParse toDate "toDistance" byteParse httpContext
     match toDistance with
     | Error -> Non
     | _ ->
@@ -320,12 +320,16 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
 [<Struct>]
 type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<Sex>}
 
+
+
+
 let getAvgMarkQuery (httpContext: HttpContext) =
-    let fromDate = queryNullableParse ParseResult.Empty "fromDate" UInt32.TryParse httpContext    
-    let toDate = queryNullableParse fromDate "toDate" UInt32.TryParse httpContext   
-    let fromAge = queryNullableParse toDate "fromAge" Int32.TryParse httpContext
-    let toAge = queryNullableParse fromAge "toAge" Int32.TryParse httpContext
-    let gender = queryNullableParse toAge "gender" Sex.TryParse httpContext
+    let x = UInt32.TryParse
+    let fromDate = queryNullableParse ParseResult.Empty "fromDate" uint32Parse httpContext    
+    let toDate = queryNullableParse fromDate "toDate" uint32Parse httpContext   
+    let fromAge = queryNullableParse toDate "fromAge" int32Parse httpContext
+    let toAge = queryNullableParse fromAge "toAge" int32Parse httpContext
+    let gender = queryNullableParse toAge "gender" sexParse httpContext
     match gender with
     | Error -> Non
     | _ ->

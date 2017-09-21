@@ -3,6 +3,7 @@ module HCup.Parser
 open System
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Primitives
+open HCup.Models
 
 [<Struct>]
 type ParseResult<'a> =
@@ -10,31 +11,48 @@ type ParseResult<'a> =
     | Empty
     | Error
 
-let bind m negativeValue f  =
-    match m with
-    | true, x -> 
-        x |> f
-    | x -> 
-        negativeValue
+let inline int32Parse str = 
+    let result = ref 0
+    if Int32.TryParse(str, result)
+    then ParseResult.Success result.Value
+    else ParseResult.Error
 
-let toParseResult parseFun value = 
-    bind (parseFun value) ParseResult.Error ParseResult.Success
+let inline uint32Parse str = 
+    let result = ref 0u
+    if UInt32.TryParse(str, result)
+    then ParseResult.Success result.Value
+    else ParseResult.Error
 
-let toString parseFun (strv: StringValues) = 
-    toParseResult parseFun <| strv.Item 0
+let inline byteParse str = 
+    let result = ref 0uy
+    if Byte.TryParse(str, result)
+    then ParseResult.Success result.Value
+    else ParseResult.Error
 
-let queryNullableParse prevResult paramName parseFun (httpContext: HttpContext) =
+let inline sexParse str = 
+    let result = ref Sex.f
+    if Sex.TryParse(str, result)
+    then ParseResult.Success result.Value
+    else ParseResult.Error
+
+let queryNullableParse (prevResult: ParseResult<'b>) paramName (parseFun: string -> 'a ParseResult) (httpContext: HttpContext) =
     match prevResult with
     | Error -> Error
     | _ ->
-        bind (httpContext.Request.Query.TryGetValue(paramName)) ParseResult.Empty (toString parseFun)
+        let outParam = ref StringValues.Empty
+        let result = httpContext.Request.Query.TryGetValue(paramName, outParam)
+        if result
+        then
+            parseFun (outParam.Value.Item 0)
+        else ParseResult.Empty
 
 let queryStringParse paramName (httpContext: HttpContext) =
-    match httpContext.Request.Query.TryGetValue(paramName) with
-    | true, x -> 
-        x.Item 0
-    | x -> 
-        null
+        let outParam = ref StringValues.Empty
+        let result = httpContext.Request.Query.TryGetValue(paramName, outParam)
+        if result
+        then
+            outParam.Value.Item 0
+        else null
 
 let checkParseResult result f =
     match result with
