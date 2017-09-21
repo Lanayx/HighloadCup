@@ -444,8 +444,7 @@ let loadData folder =
                     userVisits.[user.id] <- VisitsCollectionSorted())
                 |> Seq.toList
     Console.Write("Users {0} ", users.Length)
-
-    Console.WriteLine("Location {0} VisitLocations {1}", locations.[1], locationVisits.[1])
+    
     let visits = Directory.EnumerateFiles(folder, "visits_*.json")
                 |> Seq.map (File.ReadAllText >> deserializeObjectUnsafe<Visits>)
                 |> Seq.collect (fun visitObj -> visitObj.visits)
