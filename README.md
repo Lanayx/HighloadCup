@@ -8,7 +8,7 @@ To launch the solution
 
 Test solutions:
 1) https://github.com/AterCattus/highloadcup_tester - easiest way to test just speed
-2) https://github.com/sat2707/hlcupdocs/blob/master/TANK.md - proper way to test with graphs
+2) https://github.com/sat2707/hlcupdocs/blob/master/TANK.md - proper way to test with graphs (see https://github.com/sat2707/hlcupdocs/issues/59 to run on windows)
 
 Latest results:
 
