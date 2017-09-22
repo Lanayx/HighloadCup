@@ -35,7 +35,7 @@ namespace HCup
                     StringBuilderCache.SmallCachedInstance <- null
                     sbs.Clear()
                 else
-                    StringBuilder(300)
+                    StringBuilder(200)
 
         static member Release sb sbSize =
             if sbSize = SbSize.Big
