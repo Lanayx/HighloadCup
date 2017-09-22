@@ -24,14 +24,15 @@ type IdHandler = int -> HttpFunc -> HttpContext -> HttpFuncResult
 type IdHandlers = Dictionary<Route, IdHandler>
 type NewHandler = HttpFunc -> HttpContext -> HttpFuncResult
 
-let usersPathString = PathString("/users")
-let visitsPathString = PathString("/visits")
-let locationsPathString = PathString("/locations")
+let private usersPathString = PathString("/users")
+let private visitsPathString = PathString("/visits")
+let private locationsPathString = PathString("/locations")
 
-let inline tryParseId stringId path (dictIdHandler: IdHandlers) next ctx =
-   match Int32.TryParse(stringId) with
-   | true, value -> dictIdHandler.[path] value next ctx
-   | false, value -> setStatusCode 404 next ctx
+let inline private tryParseId stringId path (dictIdHandler: IdHandlers) next ctx =
+   let id = ref 0
+   if Int32.TryParse(stringId, id)
+   then dictIdHandler.[path] id.Value next ctx
+   else setStatusCode 404 next ctx
 
 let customGetRoutef (dictIdHandler: IdHandlers) : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) ->
@@ -57,7 +58,7 @@ let customGetRoutef (dictIdHandler: IdHandlers) : HttpHandler =
                 tryParseId (pathString.Substring(1)) Route.Location dictIdHandler next ctx
         | _-> shortCircuit
 
-let inline getPostRoute newRoute updateRoute (dictIdHandler: IdHandlers) (remaining: PathString ref) =
+let inline private getPostRoute newRoute updateRoute (dictIdHandler: IdHandlers) (remaining: PathString ref) =
     let pathString = remaining.Value.Value
     if pathString.Equals("/new",StringComparison.Ordinal)
     then dictIdHandler.[newRoute] 0
