@@ -305,9 +305,10 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
         | _ ->
             match getUserVisitsQuery httpContext with
             | Som query ->
+                let filterQuery = filterByQueryVisit query
                 let usersVisits = userVisits.[userId] 
                                       |> Seq.map (fun kv -> visits.[kv.Value])   
-                                      |> Seq.filter (filterByQueryVisit query)
+                                      |> Seq.filter filterQuery
                                       |> Seq.map (fun visit ->
                                                                 {
                                                                      mark = visit.mark
