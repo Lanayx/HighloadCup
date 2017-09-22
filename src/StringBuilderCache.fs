@@ -5,44 +5,26 @@ namespace HCup
     open System.Threading
     open System.Text
 
-    type SbSize =
-    | Small = 0
-    | Big = 1
 
     type StringBuilderCache () =
 
 
         [<ThreadStatic>]
-        [<DefaultValue>]static val mutable private SmallCachedInstance: StringBuilder
-
-        [<ThreadStatic>]
-        [<DefaultValue>]static val mutable private BigCachedInstance: StringBuilder
+        [<DefaultValue>]static val mutable private CachedInstance: StringBuilder
 
         static member Acquire sbSize =
-            if sbSize = SbSize.Big
+            let sbs =StringBuilderCache.CachedInstance
+            if sbs |> isNull |> not
             then
-                let sbb =StringBuilderCache.BigCachedInstance
-                if sbb |> isNull |> not
-                then
-                    StringBuilderCache.BigCachedInstance <- null
-                    sbb.Clear()
-                else
-                    StringBuilder(3000)
+                StringBuilderCache.CachedInstance <- null
+                sbs.Clear()
             else
-                let sbs =StringBuilderCache.SmallCachedInstance
-                if sbs |> isNull |> not
-                then
-                    StringBuilderCache.SmallCachedInstance <- null
-                    sbs.Clear()
-                else
-                    StringBuilder(200)
+                StringBuilder(3000)
 
-        static member Release sb sbSize =
-            if sbSize = SbSize.Big
-            then StringBuilderCache.BigCachedInstance <- sb
-            else StringBuilderCache.SmallCachedInstance <- sb
+        static member Release sb =
+            StringBuilderCache.CachedInstance <- sb
 
-        static member GetStringAndRelease sb sbSize =
+        static member GetStringAndRelease sb =
             let result = sb.ToString()
-            StringBuilderCache.Release sb sbSize
+            StringBuilderCache.Release sb
             result
