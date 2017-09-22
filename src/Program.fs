@@ -364,12 +364,19 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
             match getAvgMarkQuery httpContext with
             | Som query ->
                 let filterQuery = filterByQueryAvg query
-                let markedVisits = locationVisits.[locationId] 
-                                      |> Seq.map (fun key -> visits.[key])   
-                                      |> Seq.filter filterQuery
-                let avg = match markedVisits with
-                              | seq when Seq.isEmpty seq -> 0.0
-                              | seq -> Math.Round(seq |> Seq.averageBy (fun markedVisit -> markedVisit.mark), 5, MidpointRounding.AwayFromZero)
+                let currentVisits = locationVisits.[locationId]
+                let currentVisitsLength = currentVisits.Count - 1
+                let mutable sum = 0.0
+                let mutable markedVisitsCount = 0.0
+                for i = 0 to currentVisitsLength do
+                    let visit = visits.[currentVisits.[i]]                    
+                    if filterQuery visit
+                    then 
+                        markedVisitsCount <- markedVisitsCount + 1.0
+                        sum <- sum + visit.mark
+                let avg = if markedVisitsCount > 0.0
+                          then Math.Round (sum/markedVisitsCount, 5, MidpointRounding.AwayFromZero)
+                          else 0.0
                 jsonCustom (serializeAvg avg) next httpContext
             | Non -> setStatusCode 400 next httpContext    
 
