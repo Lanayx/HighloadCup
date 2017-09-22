@@ -3,7 +3,7 @@ Highload cup F# solution
 
 To launch the solution
 1) Clone or download the repository https://github.com/sat2707/hlcupdocs
-2) Create a zip file data.zip from /data/TRAIN/data from step 1, copy to src/ folder
+2) Create a zip file data.zip from /data/TRAIN/data from step 1, copy to src/ folder (/data/FULL/ is similar to real data used in rating run)
 3) Run dotnet restore and dotnet run
 
 Test solutions:
