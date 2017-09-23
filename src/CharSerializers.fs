@@ -1,5 +1,6 @@
 module HCup.CharSerializers
 
+open System
 open System.Text
 open HCup.Models
 open HCup
@@ -32,12 +33,17 @@ let private appendFloat5 (value: float) (sb: StringBuilder) =
          let intValue = (int)value
          appendInt intValue ignore sb |> ignore
          sb.Append('.') |> ignore
-         let decimalValue = (int)(value*100000.0) - intValue*100000
-         let mutable temp = decimalValue
-         while temp > 0 && temp < 10000 do
-             temp <- temp*10
-             sb.Append('0') |> ignore         
-         sb |> appendInt decimalValue ignore
+         let mutable decimalValue = (int)(Math.Round(value*100000.0, MidpointRounding.AwayFromZero)) - intValue*100000
+         if decimalValue = 0
+         then sb.Append('0')
+         else
+             let mutable temp = decimalValue
+             while temp < 10000 do
+                 temp <- temp*10
+                 sb.Append('0') |> ignore
+             while decimalValue % 10 = 0 do
+                 decimalValue <- decimalValue / 10         
+             sb |> appendInt decimalValue ignore
 
 
 type StringBuilder with

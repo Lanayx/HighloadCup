@@ -379,7 +379,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                         markedVisitsCount <- markedVisitsCount + 1.0
                         sum <- sum + (float)visit.mark
                 let avg = if markedVisitsCount > 0.0
-                          then Math.Round (sum/markedVisitsCount, 5, MidpointRounding.AwayFromZero)
+                          then sum/markedVisitsCount
                           else 0.0
                 jsonCustom (serializeAvg avg) next httpContext
             | Non -> setStatusCode 400 next httpContext    
