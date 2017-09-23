@@ -24,7 +24,7 @@ open HCup.RequestCounter
 open HCup.Actors
 open HCup.Router
 open HCup.Parser
-open HCup.Serializers
+open HCup.CharSerializers
 
 // ---------------------------------
 // Web app
@@ -319,7 +319,7 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
             | Non -> setStatusCode 400 next httpContext  
 
 [<Struct>]
-type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<Sex>}
+type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<char>}
 
 
 
@@ -329,7 +329,7 @@ let getAvgMarkQuery (httpContext: HttpContext) =
     let toDate = queryNullableParse fromDate "toDate" uint32Parse httpContext   
     let fromAge = queryNullableParse toDate "fromAge" int32Parse httpContext
     let toAge = queryNullableParse fromAge "toAge" int32Parse httpContext
-    let gender = queryNullableParse toAge "gender" sexParse httpContext
+    let gender = queryNullableParse toAge "gender" genderParse httpContext
     match gender with
     | Error -> Non
     | _ ->
@@ -342,7 +342,7 @@ let getAvgMarkQuery (httpContext: HttpContext) =
             }  
 
 let inline convertToDate timestamp =
-    timestampBase.AddSeconds(timestamp)
+    timestampBase.AddSeconds((float)timestamp)
 
 let inline diffYears (startDate: DateTime) (endDate: DateTime) =
     (endDate.Year - startDate.Year - 1) + (if ((endDate.Month > startDate.Month) || ((endDate.Month = startDate.Month) && (endDate.Day >= startDate.Day))) then 1 else 0)
@@ -377,7 +377,7 @@ let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) =
                     if filterQuery visit
                     then 
                         markedVisitsCount <- markedVisitsCount + 1.0
-                        sum <- sum + visit.mark
+                        sum <- sum + (float)visit.mark
                 let avg = if markedVisitsCount > 0.0
                           then Math.Round (sum/markedVisitsCount, 5, MidpointRounding.AwayFromZero)
                           else 0.0

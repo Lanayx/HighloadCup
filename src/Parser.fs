@@ -29,9 +29,9 @@ let inline byteParse str =
     then ParseResult.Success result.Value
     else ParseResult.Error
 
-let inline sexParse str = 
-    let result = ref Sex.f
-    if Sex.TryParse(str, result)
+let inline genderParse str = 
+    let result = ref '0'
+    if Char.TryParse(str, result)
     then ParseResult.Success result.Value
     else ParseResult.Error
 
