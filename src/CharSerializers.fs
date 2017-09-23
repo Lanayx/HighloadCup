@@ -31,8 +31,13 @@ let private appendFloat5 (value: float) (sb: StringBuilder) =
      else
          let intValue = (int)value
          appendInt intValue ignore sb |> ignore
-         sb.Append('.') 
-         |> appendInt ((int)(value*100000.0) - intValue*100000) ignore
+         sb.Append('.') |> ignore
+         let decimalValue = (int)(value*100000.0) - intValue*100000
+         let mutable temp = decimalValue
+         while temp > 0 && temp < 10000 do
+             temp <- temp*10
+             sb.Append('0') |> ignore         
+         sb |> appendInt decimalValue ignore
 
 
 type StringBuilder with
