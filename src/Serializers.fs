@@ -20,7 +20,7 @@ let inline serializeUser (user: User) =
                     .Append(",\"birth_date\":").Append(user.birth_date.ToString(System.Globalization.CultureInfo.InvariantCulture))
                     .Append(",\"first_name\":\"").Append(user.first_name)
                     .Append("\",\"last_name\":\"").Append(user.last_name)
-                    .Append("\",\"gender\":\"").Append(user.gender.ToString())
+                    .Append("\",\"gender\":\"").Append(user.gender)
                     .Append("\",\"email\":\"").Append(user.email)
                     .Append("\"}")
     StringBuilderCache.GetStringAndRelease sb

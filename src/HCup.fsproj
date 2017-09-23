@@ -17,8 +17,8 @@
     <Compile Include="Router.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="StringBuilderCache.fs" />
-    <!-- <Compile Include="Serializers.fs" /> -->
-    <Compile Include="CharSerializers.fs" />
+    <Compile Include="Serializers.fs" />
+    <!-- <Compile Include="CharSerializers.fs" /> -->
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
