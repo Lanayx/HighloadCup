@@ -5,7 +5,6 @@ open System.Buffers
 open System.Globalization
 open System.IO
 open System.Text
-open System.Text.Utf8
 
 open HCup.Models
 open HCup

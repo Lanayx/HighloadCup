@@ -2,7 +2,6 @@ namespace HCup.Models
 
 open System
 open System.Collections.Concurrent
-open System.Text.Utf8
 
 
 // type Location =
