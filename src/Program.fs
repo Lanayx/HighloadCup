@@ -152,7 +152,7 @@ let updateUser (oldUser:User) json =
             if newUser.first_name |> isNotNull then oldUser.first_name <- utf8 newUser.first_name
             if newUser.last_name |> isNotNull then oldUser.last_name <- utf8 newUser.last_name
             if newUser.birth_date.HasValue then oldUser.birth_date <- newUser.birth_date.Value
-            if newUser.gender |> isNotNull then oldUser.gender <- newUser.gender
+            if newUser.gender.HasValue then oldUser.gender <- newUser.gender.Value
             if newUser.email |> isNotNull then oldUser.email <- utf8 newUser.email
             true
         | None -> false
@@ -354,7 +354,7 @@ let getUserVisits userId (next : HttpFunc) (httpContext: HttpContext) =
             | Non -> setStatusCode 400 next httpContext  
 
 [<Struct>]
-type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<string>}
+type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<char>}
 
 
 
@@ -387,9 +387,9 @@ let inline filterByQueryAvg (query: QueryAvg) (visit: Visit) =
     let user = users.[visit.user]
     checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
         && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
+        && (checkParseResult query.gender (fun gender -> user.gender = gender))
         && (checkParseResult query.toAge (fun toAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) <  toAge))
         && (checkParseResult query.fromAge (fun fromAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) >= fromAge))
-        && (checkParseResult query.gender (fun gender -> user.gender = gender))
 
 let getAvgMark locationId (next : HttpFunc) (httpContext: HttpContext) = 
     if (locationId > locations.Length)

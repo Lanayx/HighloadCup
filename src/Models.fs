@@ -51,7 +51,7 @@ type UserUpd =
         first_name : string
         last_name: string
         birth_date: Nullable<int64>
-        gender: string
+        gender: Nullable<char>
         email: string
     }
 
@@ -71,7 +71,7 @@ type User() =
         [<DefaultValue>]val mutable first_name : byte[]
         [<DefaultValue>]val mutable last_name: byte[]
         [<DefaultValue>]val mutable birth_date: int64
-        [<DefaultValue>]val mutable gender: string
+        [<DefaultValue>]val mutable gender: char
         [<DefaultValue>]val mutable email: byte[]
 
 type UserOld() =
@@ -79,7 +79,7 @@ type UserOld() =
         [<DefaultValue>]val mutable first_name : string
         [<DefaultValue>]val mutable last_name: string
         [<DefaultValue>]val mutable birth_date: int64
-        [<DefaultValue>]val mutable gender: string
+        [<DefaultValue>]val mutable gender: char
         [<DefaultValue>]val mutable email: string
 
 
