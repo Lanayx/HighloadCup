@@ -29,10 +29,9 @@ let inline byteParse str =
     then ParseResult.Success result.Value
     else ParseResult.Error
 
-let inline genderParse str = 
-    let result = ref '0'
-    if Char.TryParse(str, result)
-    then ParseResult.Success result.Value
+let inline genderParse (str: string) = 
+    if str.Equals("m", StringComparison.Ordinal) || str.Equals("f", StringComparison.Ordinal)    
+    then ParseResult.Success str
     else ParseResult.Error
 
 let queryNullableParse (prevResult: ParseResult<'b>) paramName (parseFun: string -> 'a ParseResult) (httpContext: HttpContext) =

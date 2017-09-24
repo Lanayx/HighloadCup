@@ -2,6 +2,7 @@ namespace HCup.Models
 
 open System
 open System.Collections.Concurrent
+open System.Text.Utf8
 
 
 // type Location =
@@ -17,9 +18,17 @@ open System.Collections.Concurrent
 type Location() =
         [<DefaultValue>]val mutable id: int32
         [<DefaultValue>]val mutable distance : uint8
-        [<DefaultValue>]val mutable city: string
+        [<DefaultValue>]val mutable city: byte[] 
+        [<DefaultValue>]val mutable place: byte[]
+        [<DefaultValue>]val mutable country: string
+
+type LocationOld() =
+        [<DefaultValue>]val mutable id: int32
+        [<DefaultValue>]val mutable distance : uint8
+        [<DefaultValue>]val mutable city: string 
         [<DefaultValue>]val mutable place: string
         [<DefaultValue>]val mutable country: string
+
 
 
 [<CLIMutable>]
@@ -34,7 +43,7 @@ type LocationUpd =
 [<CLIMutable>]
 type Locations =
     {
-        locations : Location[]
+        locations : LocationOld[]
     }
 
 [<CLIMutable>]
@@ -43,7 +52,7 @@ type UserUpd =
         first_name : string
         last_name: string
         birth_date: Nullable<int64>
-        gender: Nullable<char>
+        gender: string
         email: string
     }
 
@@ -60,16 +69,26 @@ type UserUpd =
 
 type User() =
         [<DefaultValue>]val mutable id: int32
+        [<DefaultValue>]val mutable first_name : byte[]
+        [<DefaultValue>]val mutable last_name: byte[]
+        [<DefaultValue>]val mutable birth_date: int64
+        [<DefaultValue>]val mutable gender: string
+        [<DefaultValue>]val mutable email: byte[]
+
+type UserOld() =
+        [<DefaultValue>]val mutable id: int32
         [<DefaultValue>]val mutable first_name : string
         [<DefaultValue>]val mutable last_name: string
         [<DefaultValue>]val mutable birth_date: int64
-        [<DefaultValue>]val mutable gender: char
+        [<DefaultValue>]val mutable gender: string
         [<DefaultValue>]val mutable email: string
+
+
 
 [<CLIMutable>]
 type Users =
     {
-        users : User[]
+        users : UserOld[]
     }
 
 [<CLIMutable>]
@@ -111,4 +130,4 @@ type StructOption<'a> =
     | Non
 
 [<Struct>]
-type UserVisit = { mark: uint8; visited_at: uint32; place: string }
+type UserVisit = { mark: uint8; visited_at: uint32; place: byte[] }
