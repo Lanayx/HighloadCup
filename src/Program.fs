@@ -260,7 +260,7 @@ let addLocationInternal stringValue (next : HttpFunc) (httpContext: HttpContext)
                             | _ -> setStatusCode 400 next httpContext
     | None -> setStatusCode 400 next httpContext
 
-let addLocation (id:int, next : HttpFunc, httpContext: HttpContext) = 
+let addLocation (next : HttpFunc, httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()     
         return! addLocationInternal stringValue next httpContext
@@ -278,7 +278,7 @@ let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
         | _ -> setStatusCode 400 next httpContext
     | None -> setStatusCode 400 next httpContext
 
-let addVisit (id:int, next : HttpFunc, httpContext: HttpContext) = 
+let addVisit (next : HttpFunc, httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()
         return! addVisitInternal stringValue next httpContext
@@ -298,7 +298,7 @@ let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
                              | _ -> setStatusCode 400 next httpContext
     | None -> setStatusCode 400 next httpContext
 
-let addUser (id:int, next : HttpFunc, httpContext: HttpContext) = 
+let addUser (next : HttpFunc, httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()
         return! addUserInternal stringValue next httpContext
@@ -434,25 +434,36 @@ let inline private tryParseId stringId (f: IdHandler) next ctx =
 let customGetRoutef : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) ->
         let remaining = ref PathString.Empty
+        let id = ref 0
         match ctx.Request.Path with
         | visitPath when (visitPath.StartsWithSegments(visitsPathString, remaining)) ->
-            tryParseId (remaining.Value.Value.Substring(1)) getVisit next ctx
+             if Int32.TryParse(remaining.Value.Value.Substring(1), id)
+             then getVisit(id.Value, next, ctx)
+             else setStatusCode 404 next ctx
         | userPath when (userPath.StartsWithSegments(usersPathString, remaining)) -> 
             let pathString = remaining.Value.Value;
             let slashIndex = pathString.IndexOf("/visits", StringComparison.Ordinal)
             if (slashIndex > -1)
             then
-                tryParseId (pathString.Substring(1,slashIndex-1)) getUserVisits next ctx
+                if Int32.TryParse(pathString.Substring(1,slashIndex-1), id)
+                then getUserVisits(id.Value, next, ctx)
+                else setStatusCode 404 next ctx
             else 
-                tryParseId (pathString.Substring(1)) getUser next ctx
+                if Int32.TryParse(pathString.Substring(1), id)
+                then getUser(id.Value, next, ctx)
+                else setStatusCode 404 next ctx
         | locationPath when (locationPath.StartsWithSegments(locationsPathString, remaining)) ->          
             let pathString = remaining.Value.Value;
             let slashIndex = pathString.IndexOf("/avg", StringComparison.Ordinal)
             if (slashIndex > -1)
             then
-                tryParseId (pathString.Substring(1,slashIndex-1)) getAvgMark next ctx
-            else 
-                tryParseId (pathString.Substring(1)) getLocation next ctx
+                if Int32.TryParse(pathString.Substring(1,slashIndex-1), id)
+                then getAvgMark(id.Value, next, ctx)
+                else setStatusCode 404 next ctx
+            else
+                if Int32.TryParse(pathString.Substring(1), id)
+                then getLocation(id.Value, next, ctx)
+                else setStatusCode 404 next ctx
         | _-> shortCircuit
 
 let inline private getPostRoute (newRoute: IdHandler) (updateRoute: IdHandler) (remaining: PathString ref) next ctx =
@@ -466,11 +477,32 @@ let customPostRoutef : HttpHandler =
         let remaining = ref PathString.Empty
         match ctx.Request.Path with
         | visitPath when (visitPath.StartsWithSegments(visitsPathString, remaining)) ->
-            getPostRoute addVisit updateVisit remaining next ctx
+            let pathString = remaining.Value.Value
+            if pathString.Equals("/new",StringComparison.Ordinal)
+            then addVisit(next, ctx)
+            else 
+                let id = ref 0
+                if Int32.TryParse(pathString.Substring(1), id)
+                then updateVisit(id.Value, next, ctx)
+                else setStatusCode 404 next ctx
         | userPath when (userPath.StartsWithSegments(usersPathString, remaining)) -> 
-            getPostRoute addUser updateUser remaining next ctx
+            let pathString = remaining.Value.Value
+            if pathString.Equals("/new",StringComparison.Ordinal)
+            then addUser(next, ctx)
+            else 
+                let id = ref 0
+                if Int32.TryParse(pathString.Substring(1), id)
+                then updateUser(id.Value, next, ctx)
+                else setStatusCode 404 next ctx
         | locationPath when (locationPath.StartsWithSegments(locationsPathString, remaining)) ->    
-            getPostRoute addLocation updateLocation remaining next ctx
+            let pathString = remaining.Value.Value
+            if pathString.Equals("/new",StringComparison.Ordinal)
+            then addLocation(next, ctx)
+            else 
+                let id = ref 0
+                if Int32.TryParse(pathString.Substring(1), id)
+                then updateLocation(id.Value, next, ctx)
+                else setStatusCode 404 next ctx
         | _-> shortCircuit
 
 
