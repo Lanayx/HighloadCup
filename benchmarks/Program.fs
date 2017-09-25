@@ -70,7 +70,7 @@ let private writeInt32TableStackalloc (output : MemoryStream) (number: int) =
 
 type SerializerBenchmarks() =
     let count = 1000
-    let numbers = [| 1..1000 |]
+    let numbers = [| 1..count |]
     let buffers = numbers |> Array.map(fun _ -> new MemoryStream(100))
 
     [<Benchmark>]
