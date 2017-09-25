@@ -11,6 +11,7 @@
     <Compile Include="Juraff/HttpContextExtensions.fs" />
     <Compile Include="Juraff/HttpHandlers.fs" />
     <Compile Include="Juraff/Middleware.fs" />
+    <Compile Include="GCTimer.fs" />
     <Compile Include="Models.fs" />
     <Compile Include="RequestCounter.fs" />
     <Compile Include="Actors.fs" />

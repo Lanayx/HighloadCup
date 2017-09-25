@@ -8,26 +8,25 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Juraff.HttpHandlers
 open Juraff.Tasks
+open GCTimer
 
-let outstandingRequestCount = ref 0
 
 type RequestCounterMiddleware (next : RequestDelegate,
                                handler : HttpHandler) =
 
     member __.Invoke (ctx : HttpContext) =
-        Interlocked.Increment(outstandingRequestCount)
-        |> (fun reqCount -> 
-                            if (reqCount = 150150 || reqCount = 190150)
-                            then GC.Collect(1)
-                            if (reqCount &&& 8191 = 0)
-                            then
+        let reqCount = Interlocked.Increment(outstandingRequestCount)
+                            // if (reqCount = 150150 || reqCount = 190150)
+                            // then GC.Collect(1)
+        if (reqCount &&& 8191 = 0)
+        then
                                 Console.WriteLine("Gen0={0} Gen1={1} Gen2={2} Alloc={3} Time={4} ReqCount={5}",
                                     GC.CollectionCount(0),
                                     GC.CollectionCount(1),
                                     GC.CollectionCount(2),
                                     GC.GetTotalMemory(false),                                        
                                     DateTime.Now.ToString("HH:mm:ss.ffff"),
-                                    reqCount))
+                                    reqCount)
         next.Invoke ctx
 
 type IApplicationBuilder with
