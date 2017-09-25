@@ -6,6 +6,16 @@ open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Running
 open FSharp.NativeInterop
 
+let private writeInt32Bufferless (output : MemoryStream) (number: int) =
+    let numbersCount = (int) ((float)number |> Math.Log10 ) + 1
+    let mutable num = number
+    for i = numbersCount downto 2 do
+        let divider = (int)(10.0 ** (float)(i-1))
+        let number = num / divider
+        output.WriteByte((byte) (number + 48))
+        num <- num - number*divider
+    output.WriteByte((byte) (num + 48))
+
 let private writeInt32LogPool (output : MemoryStream) (number: int) =
     let numbersCount = (int) ((float)number |> Math.Log10 ) + 1
     let buffer = ArrayPool.Shared.Rent numbersCount
@@ -89,6 +99,10 @@ type SerializerBenchmarks() =
     member __.WriteInt32TableStackalloc() =
         Array.mapi(fun i n -> writeInt32TableStackalloc buffers.[i] n; buffers.[i]) numbers
 
+    [<Benchmark>]
+    member __.WriteInt32Bufferless() =
+        Array.mapi(fun i n -> writeInt32Bufferless buffers.[i] n; buffers.[i]) numbers
+
 [<EntryPoint>]
 let main argv =
     ignore <| BenchmarkRunner.Run<SerializerBenchmarks>()
@@ -96,7 +110,8 @@ let main argv =
 
 (*                  Method |     Mean |    Error |   StdDev |
 -------------------------- |---------:|---------:|---------:|
-         WriteInt32LogPool | 171.7 us | 3.168 us | 2.645 us |
-       WriteInt32TablePool | 159.4 us | 2.714 us | 2.406 us |
-   WriteInt32LogStackalloc | 140.9 us | 2.933 us | 5.437 us |
- WriteInt32TableStackalloc | 117.6 us | 2.367 us | 5.246 us | *)
+         WriteInt32LogPool | 177.8 us | 3.535 us | 4.471 us |
+       WriteInt32TablePool | 165.3 us | 3.218 us | 4.404 us |
+   WriteInt32LogStackalloc | 140.5 us | 2.756 us | 5.631 us |
+ WriteInt32TableStackalloc | 115.9 us | 2.285 us | 4.402 us |
+      WriteInt32Bufferless | 169.1 us | 3.317 us | 5.722 us | *)
