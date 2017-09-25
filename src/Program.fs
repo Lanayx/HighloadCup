@@ -94,8 +94,9 @@ let inline jsonBuffer (response : MemoryStream) =
         ctx.Response.Headers.["Content-Type"] <- jsonStringValues
         ctx.Response.Headers.["Content-Length"] <- StringValues(string length)
         let bytes = response.GetBuffer()
+        ctx.Response.Body.Write(bytes, 0, length)
         task {            
-            do! ctx.Response.Body.WriteAsync(bytes, 0, length)
+            do! ctx.Response.Body.FlushAsync()
             ArrayPool.Shared.Return bytes
             return! next ctx
         }
