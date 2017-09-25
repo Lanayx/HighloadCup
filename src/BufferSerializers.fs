@@ -6,8 +6,12 @@ open System.Globalization
 open System.IO
 open System.Text
 
+open FSharp.NativeInterop
+
 open HCup.Models
 open HCup
+
+#nowarn "9"
 
 let private smallBuffer() = ArrayPool.Shared.Rent 400
 let private bigBuffer() = ArrayPool.Shared.Rent 6000
@@ -17,66 +21,126 @@ let utf8 : string -> byte[] = utf8Encoding.GetBytes
 let private writeArray (output : MemoryStream) array = output.Write(array, 0, array.Length)
 let private stream buffer = new MemoryStream(buffer, 0, buffer.Length, true, true)
 
-
 let private writeInt32 (output : MemoryStream) (number: int) =
-    let numbersCount = (int) ((float)number |> Math.Log10 ) + 1
-    let mutable num = number
-    for i = numbersCount downto 2 do
-        let divider = (int)(10.0 ** (float)(i-1))
-        let number = num / divider
-        output.WriteByte((byte) (number + 48))
-        num <- num - number*divider 
-    output.WriteByte((byte) (num + 48))
-
-let private writeUInt32 (output : MemoryStream) (number: uint32) =
-    let numbersCount = (int) ((float)number |> Math.Log10 ) + 1
-    let buffer = ArrayPool.Shared.Rent numbersCount
+    let numbersCount =
+        if number < 10 then 1
+        else if number < 100 then 2
+        else if number < 1_000 then 3
+        else if number < 10_000 then 4
+        else if number < 100_000 then 5
+        else if number < 1_000_000 then 6
+        else if number < 10_000_000 then 7
+        else if number < 100_000_000 then 8
+        else if number < 1_000_000_000 then 9
+        else 10
+    let buffer = NativePtr.stackalloc<byte> numbersCount
     let mutable num = number
     for i = 1 to numbersCount do
-        buffer.[numbersCount - i] <- (byte) (num % 10u + 48u)
+        NativePtr.set buffer (numbersCount - i) (byte (num % 10 + 48))
+        num <- num / 10
+    for i = 1 to numbersCount do
+        output.WriteByte (NativePtr.get buffer (i - 1))
+
+let private writeUInt32 (output : MemoryStream) (number: uint32) =
+    let numbersCount =
+        if number < 10u then 1
+        else if number < 100u then 2
+        else if number < 1_000u then 3
+        else if number < 10_000u then 4
+        else if number < 100_000u then 5
+        else if number < 1_000_000u then 6
+        else if number < 10_000_000u then 7
+        else if number < 100_000_000u then 8
+        else if number < 1_000_000_000u then 9
+        else 10
+    let buffer = NativePtr.stackalloc<byte> numbersCount
+    let mutable num = number
+    for i = 1 to numbersCount do
+        NativePtr.set buffer (numbersCount - i) (byte (num % 10u + 48u))
         num <- num /10u
-    output.Write(buffer, 0, numbersCount)
-    ArrayPool.Shared.Return buffer
+    for i = 1 to numbersCount do
+        output.WriteByte (NativePtr.get buffer (i - 1))
 
 let private writeInt64 (output : MemoryStream) (number: int64) =
     if number > 0L
     then
-        let numbersCount = (int) ((float)number |> Math.Log10 ) + 1
-        let buffer = ArrayPool.Shared.Rent numbersCount
+        let numbersCount =
+            if number < 10L then 1
+            else if number < 100L then 2
+            else if number < 1_000L then 3
+            else if number < 10_000L then 4
+            else if number < 100_000L then 5
+            else if number < 1_000_000L then 6
+            else if number < 10_000_000L then 7
+            else if number < 100_000_000L then 8
+            else if number < 1_000_000_000L then 9
+            else if number < 10_000_000_000L then 10
+            else if number < 100_000_000_000L then 11
+            else if number < 1_000_000_000_000L then 12
+            else if number < 10_000_000_000_000L then 13
+            else if number < 100_000_000_000_000L then 14
+            else if number < 1_000_000_000_000_000L then 15
+            else if number < 10_000_000_000_000_000L then 16
+            else if number < 100_000_000_000_000_000L then 17
+            else if number < 1_000_000_000_000_000_000L then 18
+            else 19
+        let buffer = NativePtr.stackalloc<byte> numbersCount
         let mutable num = number
         for i = 1 to numbersCount do
-            buffer.[numbersCount - i] <- (byte) (num % 10L + 48L)
+            NativePtr.set buffer (numbersCount - i) (byte (num % 10L + 48L))
             num <- num /10L
-        output.Write(buffer, 0, numbersCount)
-        ArrayPool.Shared.Return buffer
+        for i = 1 to numbersCount do
+            output.WriteByte (NativePtr.get buffer (i - 1))
     else
-        let posNumber = number * (-1L)
-        let numbersCount = (int) ((float)posNumber |> Math.Log10 ) + 1
-        let buffer = ArrayPool.Shared.Rent numbersCount
+        let posNumber = -number
+        let numbersCount =
+            if posNumber < 10L then 1
+            else if posNumber < 100L then 2
+            else if posNumber < 1_000L then 3
+            else if posNumber < 10_000L then 4
+            else if posNumber < 100_000L then 5
+            else if posNumber < 1_000_000L then 6
+            else if posNumber < 10_000_000L then 7
+            else if posNumber < 100_000_000L then 8
+            else if posNumber < 1_000_000_000L then 9
+            else if posNumber < 10_000_000_000L then 10
+            else if posNumber < 100_000_000_000L then 11
+            else if posNumber < 1_000_000_000_000L then 12
+            else if posNumber < 10_000_000_000_000L then 13
+            else if posNumber < 100_000_000_000_000L then 14
+            else if posNumber < 1_000_000_000_000_000L then 15
+            else if posNumber < 10_000_000_000_000_000L then 16
+            else if posNumber < 100_000_000_000_000_000L then 17
+            else if posNumber < 1_000_000_000_000_000_000L then 18
+            else 19
+        let buffer = NativePtr.stackalloc<byte> numbersCount
         let mutable num = posNumber
         for i = 1 to numbersCount do
-            buffer.[numbersCount - i] <- (byte) (num % 10L + 48L)
+            NativePtr.set buffer (numbersCount - i) (byte (num % 10L + 48L))
             num <- num /10L
-        output.WriteByte((byte)'-')
-        output.Write(buffer, 0, numbersCount)
-        ArrayPool.Shared.Return buffer
+        output.WriteByte(byte '-')
+        for i = 1 to numbersCount do
+            output.WriteByte (NativePtr.get buffer (i - 1))
 
 let private writeUint8 (output : MemoryStream) (number: uint8) =
-    let numbersCount = (int) ((float)number |> Math.Log10 ) + 1
-    let buffer = ArrayPool.Shared.Rent numbersCount
+    let numbersCount =
+        if number < 10uy then 1
+        else if number < 100uy then 2
+        else 3
+    let buffer = NativePtr.stackalloc<byte> numbersCount
     let mutable num = number
     for i = 1 to numbersCount do
-        buffer.[numbersCount - i] <- (byte) (num % 10uy + 48uy)
+        NativePtr.set buffer (numbersCount - i) (byte (num % 10uy + 48uy))
         num <- num /10uy
-    output.Write(buffer, 0, numbersCount)
-    ArrayPool.Shared.Return buffer
+    for i = 1 to numbersCount do
+        output.WriteByte (NativePtr.get buffer (i - 1))
 
 let private writeString (output : MemoryStream) (str: string) =
     let stringLength = str.Length - 1
     let buffer = ArrayPool.Shared.Rent (str.Length*2)
     let written = utf8Encoding.GetBytes(str,0,str.Length, buffer,0)
     output.Write(buffer, 0, written)
-    ArrayPool.Shared.Return buffer   
+    ArrayPool.Shared.Return buffer
 
 let private writeChar (output : MemoryStream) (chr: char) =
     output.WriteByte((byte)chr)
@@ -84,7 +148,7 @@ let private writeChar (output : MemoryStream) (chr: char) =
 let private writeFloat (output : MemoryStream) (value: float) =
      let zeroByte = (byte)'0';
      if value = 0.0
-     then 
+     then
         output.WriteByte(zeroByte);output.WriteByte((byte)'.');output.WriteByte(zeroByte);
      else
          let intValue = (int)value
@@ -99,7 +163,7 @@ let private writeFloat (output : MemoryStream) (value: float) =
                  temp <- temp*10
                  output.WriteByte(zeroByte)
              while decimalValue % 10 = 0 do
-                 decimalValue <- decimalValue / 10         
+                 decimalValue <- decimalValue / 10
              writeInt32 output decimalValue
 
 

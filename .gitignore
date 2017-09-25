@@ -1,5 +1,6 @@
 paket.exe
 packages/
+BenchmarkDotNet.Artifacts/
 bin/
 obj/
 artifacts/
