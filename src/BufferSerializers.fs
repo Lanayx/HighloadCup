@@ -20,13 +20,13 @@ let private stream buffer = new MemoryStream(buffer, 0, buffer.Length, true, tru
 
 let private writeInt32 (output : MemoryStream) (number: int) =
     let numbersCount = (int) ((float)number |> Math.Log10 ) + 1
-    let buffer = ArrayPool.Shared.Rent numbersCount
     let mutable num = number
-    for i = 1 to numbersCount do
-        buffer.[numbersCount - i] <- (byte) (num % 10 + 48)
-        num <- num /10
-    output.Write(buffer, 0, numbersCount)
-    ArrayPool.Shared.Return buffer
+    for i = numbersCount downto 2 do
+        let divider = (int)(10.0 ** (float)(i-1))
+        let number = num / divider
+        output.WriteByte((byte) (number + 48))
+        num <- num - number*divider 
+    output.WriteByte((byte) (num + 48))
 
 let private writeUInt32 (output : MemoryStream) (number: uint32) =
     let numbersCount = (int) ((float)number |> Math.Log10 ) + 1
