@@ -95,11 +95,8 @@ let inline jsonBuffer (response : MemoryStream) =
         ctx.Response.Headers.ContentLength <- Nullable(length)
         let bytes = response.GetBuffer()
         ctx.Response.Body.Write(bytes, 0, (int32)length)
-        task {            
-            do! ctx.Response.Body.FlushAsync()
-            ArrayPool.Shared.Return bytes
-            return! next ctx
-        }
+        ArrayPool.Shared.Return bytes
+        next ctx
 
 let inline checkStringFromRequest (stringValue: string) = 
     stringValue.Contains(": null") |> not
@@ -578,6 +575,7 @@ let configureApp (app : IApplicationBuilder) =
 let configureKestrel (options : KestrelServerOptions) =
     // options.ListenUnixSocket "/tmp/tkestrel.sock"
     options.ApplicationSchedulingMode <- Abstractions.Internal.SchedulingMode.Inline
+    options.AllowSynchronousIO <- true
 
 let loadData folder =
 
