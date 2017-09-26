@@ -23,104 +23,91 @@ let private stream buffer = new MemoryStream(buffer, 0, buffer.Length, true, tru
 
 let private writeInt32 (output : MemoryStream) (number: int) =
     let numbersCount =
-        if number < 10 then 1
-        else if number < 100 then 2
-        else if number < 1_000 then 3
-        else if number < 10_000 then 4
-        else if number < 100_000 then 5
-        else if number < 1_000_000 then 6
-        else if number < 10_000_000 then 7
-        else if number < 100_000_000 then 8
-        else if number < 1_000_000_000 then 9
-        else 10
+        if number >= 1_000_000_000 then 10
+        elif number >= 100_000_000 then 9
+        elif number >= 10_000_000 then 8
+        elif number >= 1_000_000 then 7
+        elif number >= 100_000 then 6
+        elif number >= 10_000 then 5
+        elif number >= 1_000 then 4
+        elif number >= 100 then 3
+        elif number >= 10 then 2
+        else 1
     let buffer = NativePtr.stackalloc<byte> numbersCount
     let mutable num = number
-    for i = 1 to numbersCount do
-        NativePtr.set buffer (numbersCount - i) (byte (num % 10 + 48))
+    let loopMax = numbersCount - 1
+    for i = loopMax downto 0 do
+        NativePtr.set buffer i (byte (num % 10 + 48))
         num <- num / 10
-    for i = 1 to numbersCount do
-        output.WriteByte (NativePtr.get buffer (i - 1))
+    for i = 0 to loopMax do
+        output.WriteByte (NativePtr.get buffer i)
 
 let private writeUInt32 (output : MemoryStream) (number: uint32) =
     let numbersCount =
-        if number < 10u then 1
-        else if number < 100u then 2
-        else if number < 1_000u then 3
-        else if number < 10_000u then 4
-        else if number < 100_000u then 5
-        else if number < 1_000_000u then 6
-        else if number < 10_000_000u then 7
-        else if number < 100_000_000u then 8
-        else if number < 1_000_000_000u then 9
-        else 10
+        if number >= 1_000_000_000u then 10
+        elif number >= 100_000_000u then 9
+        elif number >= 10_000_000u then 8
+        elif number >= 1_000_000u then 7
+        elif number >= 100_000u then 6
+        elif number >= 10_000u then 5
+        elif number >= 1_000u then 4
+        elif number >= 100u then 3
+        elif number >= 10u then 2
+        else 1
     let buffer = NativePtr.stackalloc<byte> numbersCount
     let mutable num = number
-    for i = 1 to numbersCount do
-        NativePtr.set buffer (numbersCount - i) (byte (num % 10u + 48u))
-        num <- num /10u
-    for i = 1 to numbersCount do
-        output.WriteByte (NativePtr.get buffer (i - 1))
+    let loopMax = numbersCount - 1
+    for i = loopMax downto 0 do
+        NativePtr.set buffer i (byte (num % 10u + 48u))
+        num <- num / 10u
+    for i = 0 to loopMax do
+        output.WriteByte (NativePtr.get buffer i)
 
-let private writeInt64 (output : MemoryStream) (number: int64) =
-    if number > 0L
+let private writeInt32x (output : MemoryStream) (number: int32) =
+    if number > 0
     then
         let numbersCount =
-            if number < 10L then 1
-            else if number < 100L then 2
-            else if number < 1_000L then 3
-            else if number < 10_000L then 4
-            else if number < 100_000L then 5
-            else if number < 1_000_000L then 6
-            else if number < 10_000_000L then 7
-            else if number < 100_000_000L then 8
-            else if number < 1_000_000_000L then 9
-            else if number < 10_000_000_000L then 10
-            else if number < 100_000_000_000L then 11
-            else if number < 1_000_000_000_000L then 12
-            else if number < 10_000_000_000_000L then 13
-            else if number < 100_000_000_000_000L then 14
-            else if number < 1_000_000_000_000_000L then 15
-            else if number < 10_000_000_000_000_000L then 16
-            else if number < 100_000_000_000_000_000L then 17
-            else if number < 1_000_000_000_000_000_000L then 18
-            else 19
+            if number >= 1_000_000_000 then 10
+            elif number >= 100_000_000 then 9
+            elif number >= 10_000_000 then 8
+            elif number >= 1_000_000 then 7
+            elif number >= 100_000 then 6
+            elif number >= 10_000 then 5
+            elif number >= 1_000 then 4
+            elif number >= 100 then 3
+            elif number >= 10 then 2
+            else 1
         let buffer = NativePtr.stackalloc<byte> numbersCount
         let mutable num = number
-        for i = 1 to numbersCount do
-            NativePtr.set buffer (numbersCount - i) (byte (num % 10L + 48L))
-            num <- num /10L
-        for i = 1 to numbersCount do
-            output.WriteByte (NativePtr.get buffer (i - 1))
+        let loopMax = numbersCount - 1
+        for i = loopMax downto 0 do
+            NativePtr.set buffer i (byte (num % 10 + 48))
+            num <- num / 10
+        for i = 0 to loopMax do
+            output.WriteByte (NativePtr.get buffer i)
+
     else
         let posNumber = -number
         let numbersCount =
-            if posNumber < 10L then 1
-            else if posNumber < 100L then 2
-            else if posNumber < 1_000L then 3
-            else if posNumber < 10_000L then 4
-            else if posNumber < 100_000L then 5
-            else if posNumber < 1_000_000L then 6
-            else if posNumber < 10_000_000L then 7
-            else if posNumber < 100_000_000L then 8
-            else if posNumber < 1_000_000_000L then 9
-            else if posNumber < 10_000_000_000L then 10
-            else if posNumber < 100_000_000_000L then 11
-            else if posNumber < 1_000_000_000_000L then 12
-            else if posNumber < 10_000_000_000_000L then 13
-            else if posNumber < 100_000_000_000_000L then 14
-            else if posNumber < 1_000_000_000_000_000L then 15
-            else if posNumber < 10_000_000_000_000_000L then 16
-            else if posNumber < 100_000_000_000_000_000L then 17
-            else if posNumber < 1_000_000_000_000_000_000L then 18
-            else 19
+            if posNumber >= 1_000_000_000 then 10
+            elif posNumber >= 100_000_000 then 9
+            elif posNumber >= 10_000_000 then 8
+            elif posNumber >= 1_000_000 then 7
+            elif posNumber >= 100_000 then 6
+            elif posNumber >= 10_000 then 5
+            elif posNumber >= 1_000 then 4
+            elif posNumber >= 100 then 3
+            elif posNumber >= 10 then 2
+            else 1
         let buffer = NativePtr.stackalloc<byte> numbersCount
         let mutable num = posNumber
-        for i = 1 to numbersCount do
-            NativePtr.set buffer (numbersCount - i) (byte (num % 10L + 48L))
-            num <- num /10L
+        let loopMax = numbersCount - 1
+        for i = loopMax downto 0 do
+            NativePtr.set buffer i (byte (num % 10 + 48))
+            num <- num / 10        
         output.WriteByte(byte '-')
-        for i = 1 to numbersCount do
-            output.WriteByte (NativePtr.get buffer (i - 1))
+        for i = 0 to loopMax do
+            output.WriteByte (NativePtr.get buffer i)
 
 let private writeUint8 (output : MemoryStream) (number: uint8) =
     let numbersCount =
@@ -204,7 +191,7 @@ let serializeUser (user: User) : MemoryStream =
     write ``{"id":``
     writeInt32 output user.id
     write ``,"birth_date":``
-    writeInt64 output user.birth_date
+    writeInt32x output user.birth_date
     write ``,"first_name":"``
     write user.first_name
     write ``","last_name":"``
