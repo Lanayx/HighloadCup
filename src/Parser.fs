@@ -53,8 +53,3 @@ let queryStringParse paramName (httpContext: HttpContext) =
         then
             outParam.Value.Item 0
         else null
-
-let checkParseResult result f =
-    match result with
-    | Success a -> a |> f
-    | _ -> true

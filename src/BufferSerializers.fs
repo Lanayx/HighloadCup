@@ -245,9 +245,9 @@ let serializeVisits (visits: UserVisit seq) : MemoryStream =
             write ``{"mark":``
         else
             write ``,{"mark":``
-        write (utf8(string visit.mark))
+        writeUint8 output visit.mark
         write ``,"visited_at":``
-        write(utf8(string visit.visited_at))
+        writeUInt32 output visit.visited_at
         write ``,"place":"``
         write visit.place
         write ``"}``
@@ -261,6 +261,6 @@ let serializeAvg (avg: float) : MemoryStream =
     let output = stream array
     let write = writeArray output
     write ``{"avg":``
-    write(utf8(string avg))
+    writeFloat output avg
     write ``}``
     output

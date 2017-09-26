@@ -90,11 +90,11 @@ let inline jsonCustom str (next : HttpFunc) (httpContext: HttpContext) =
 
 let inline jsonBuffer (response : MemoryStream) =
     fun (next : HttpFunc) (ctx: HttpContext) ->
-        let length = int response.Position
+        let length = response.Position
         ctx.Response.Headers.["Content-Type"] <- jsonStringValues
-        ctx.Response.Headers.["Content-Length"] <- StringValues(string length)
+        ctx.Response.Headers.ContentLength <- Nullable(length)
         let bytes = response.GetBuffer()
-        ctx.Response.Body.Write(bytes, 0, length)
+        ctx.Response.Body.Write(bytes, 0, (int32)length)
         task {            
             do! ctx.Response.Body.FlushAsync()
             ArrayPool.Shared.Return bytes
@@ -325,10 +325,26 @@ let getUserVisitsQuery (httpContext: HttpContext) =
 
 let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
     let location = locations.[visit.location]
-    checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
-        && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
-        && (checkParseResult query.toDistance (fun toDistance -> location.distance < toDistance))
-        && (String.IsNullOrEmpty(query.country) || location.country = query.country)
+    match query.fromDate with
+    | Success fromDate -> 
+        visit.visited_at > fromDate
+    | _ -> true
+    &&
+    match query.toDate with
+    | Success toDate -> 
+        visit.visited_at < toDate
+    | _ -> true
+    &&
+    match query.toDistance with
+    | Success toDistance -> 
+        location.distance < toDistance
+    | _ -> true
+    &&
+    (String.IsNullOrEmpty(query.country) || location.country = query.country)
+    // checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
+    //     && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
+    //     && (checkParseResult query.toDistance (fun toDistance -> location.distance < toDistance))
+    //     && (String.IsNullOrEmpty(query.country) || location.country = query.country)
 
 let getUserVisits (userId, next : HttpFunc, httpContext: HttpContext) = 
     if (userId > users.Length)
@@ -386,11 +402,38 @@ let inline diffYears (startDate: DateTime) (endDate: DateTime) =
 
 let inline filterByQueryAvg (query: QueryAvg) (visit: Visit) =
     let user = users.[visit.user]
-    checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
-        && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
-        && (checkParseResult query.gender (fun gender -> user.gender = gender))
-        && (checkParseResult query.toAge (fun toAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) <  toAge))
-        && (checkParseResult query.fromAge (fun fromAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) >= fromAge))
+    match query.fromDate with
+    | Success fromDate -> 
+        visit.visited_at > fromDate
+    | _ -> true    
+    &&
+    match query.toDate with
+    | Success toDate -> 
+        visit.visited_at < toDate
+    | _ -> true
+    &&
+    match query.gender with
+    | Success gender -> 
+                user.gender = gender
+    | _ -> true
+    &&
+    match query.toAge with
+    | Success toAge -> 
+        (diffYears (user.birth_date |> convertToDate) currentDate) < toAge
+    | _ -> true
+    &&
+    match query.fromAge with
+    | Success fromAge -> 
+        (diffYears (user.birth_date |> convertToDate) currentDate ) >= fromAge
+    | _ -> true
+
+    // checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
+    //     && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
+    //     && (checkParseResult query.gender (fun gender -> user.gender = gender))
+    //     && (checkParseResult query.toAge (fun toAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) <  toAge))
+    //     && (checkParseResult query.fromAge (fun fromAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) >= fromAge))
+
+
 
 let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) = 
     if (locationId > locations.Length)
