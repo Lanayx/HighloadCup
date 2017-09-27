@@ -579,7 +579,7 @@ let configureApp (app : IApplicationBuilder) =
 let configureKestrel (options : KestrelServerOptions) =
     // options.ListenUnixSocket "/tmp/tkestrel.sock"
     options.ApplicationSchedulingMode <- Abstractions.Internal.SchedulingMode.Inline
-    options.AddServerHeader <- false
+    options.AllowSynchronousIO <- false
 
 let loadData folder =
 
