@@ -6,7 +6,7 @@ let mutable lastRequestCount = 0
 let mutable GCRun = false
 
 
-let syncTimer = new System.Timers.Timer(1000.0)
+let syncTimer = new System.Timers.Timer(500.0)
 syncTimer.Elapsed.Add(fun arg ->
     if (lastRequestCount > 0 && lastRequestCount = outstandingRequestCount.Value)
     then
