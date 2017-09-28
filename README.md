@@ -14,214 +14,231 @@ Latest results:
 
 1st round 
 
-![1st](http://clip2net.com/clip/m380071/f12db-clip-56kb.png)
+![1st](http://clip2net.com/clip/m380071/88d2c-clip-105kb.png)
 
 2nd round 
 
-![2nd](http://clip2net.com/clip/m380071/8a28d-clip-52kb.png)
+![2nd](http://clip2net.com/clip/m380071/7c400-clip-49kb.png)
 
 3d round 
 
-![3d](http://clip2net.com/clip/m380071/038e5-clip-58kb.png)
+![3d](http://clip2net.com/clip/m380071/97bb6-clip-55kb.png)
 
 Logs:
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1246701000 Time=17:12:39.7432 ReqCount=8192
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1268589824 Time=17:13:08.7989 ReqCount=16384
+client_8320_1 |Locations 760409 Users 1000072 Visits: 10000720
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1290655024 Time=17:13:31.0935 ReqCount=24576
+client_8320_1 |Hosting environment: Production
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1312801272 Time=17:13:49.8897 ReqCount=32768
+client_8320_1 |Content root path: /app/
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1334583704 Time=17:14:06.4469 ReqCount=40960
+client_8320_1 |Now listening on: http://[::]:80
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1356620032 Time=17:14:21.4178 ReqCount=49152
+client_8320_1 |Application started. Press Ctrl+C to shut down.
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1378533544 Time=17:14:35.1847 ReqCount=57344
+client_8320_1 |{"id":8,"birth_date":-1257206400,"first_name":"Алина","last_name":"Колыканая","gender":"f","email":"awdufutfyubwani@mail.ru"}Gen0=12 Gen1=10 Gen2=9 Alloc=1211845096 Time=10:39:39.4986 ReqCount=8192
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1400570232 Time=17:14:47.9982 ReqCount=65536
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1226746128 Time=10:40:08.5601 ReqCount=16384
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1422639424 Time=17:15:00.0333 ReqCount=73728
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1241696360 Time=10:40:30.8575 ReqCount=24576
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1444479088 Time=17:15:11.4154 ReqCount=81920
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1256695760 Time=10:40:49.6550 ReqCount=32768
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1466507256 Time=17:15:22.2425 ReqCount=90112
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1271498648 Time=10:41:06.2145 ReqCount=40960
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1488379672 Time=17:15:32.5872 ReqCount=98304
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1286522632 Time=10:41:21.1853 ReqCount=49152
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1510465456 Time=17:15:42.5079 ReqCount=106496
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1301489248 Time=10:41:34.9529 ReqCount=57344
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1532493624 Time=17:15:52.0559 ReqCount=114688
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1316406816 Time=10:41:47.7670 ReqCount=65536
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1554374336 Time=17:16:01.2673 ReqCount=122880
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1331414448 Time=10:41:59.8026 ReqCount=73728
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1576345192 Time=17:16:10.1774 ReqCount=131072
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1346250072 Time=10:42:11.1860 ReqCount=81920
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1598225928 Time=17:16:18.8125 ReqCount=139264
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1361241360 Time=10:42:22.0133 ReqCount=90112
 
-client_8233_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1620320008 Time=17:16:27.1967 ReqCount=147456
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1376175264 Time=10:42:32.3562 ReqCount=98304
 
-client_8233_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1306720152 Time=17:17:47.0402 ReqCount=155648
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1391101048 Time=10:42:42.2783 ReqCount=106496
 
-client_8233_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1425372720 Time=17:18:46.9644 ReqCount=163840
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1406100480 Time=10:42:51.8266 ReqCount=114688
 
-client_8233_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1544307064 Time=17:19:31.7800 ReqCount=172032
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1420968752 Time=10:43:01.0388 ReqCount=122880
 
-client_8233_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1663096048 Time=17:20:09.1916 ReqCount=180224
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1435951880 Time=10:43:09.9483 ReqCount=131072
 
-client_8233_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1782003488 Time=17:20:41.9785 ReqCount=188416
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1450861176 Time=10:43:18.5828 ReqCount=139264
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1245151160 Time=17:21:21.1732 ReqCount=196608
+client_8320_1 |Gen0=12 Gen1=10 Gen2=9 Alloc=1465795104 Time=10:43:26.9679 ReqCount=147456
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1266360160 Time=17:21:27.1728 ReqCount=204800
+client_8320_1 |Running GC 150155 150155
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1287822864 Time=17:21:31.7634 ReqCount=212992
+client_8320_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1277975664 Time=10:44:46.5402 ReqCount=155648
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1309015336 Time=17:21:35.6285 ReqCount=221184
+client_8320_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1395440112 Time=10:45:46.4792 ReqCount=163840
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1330314344 Time=17:21:39.0315 ReqCount=229376
+client_8320_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1513194368 Time=10:46:31.3013 ReqCount=172032
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1351801752 Time=17:21:42.1072 ReqCount=237568
+client_8320_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1630840344 Time=10:47:08.7161 ReqCount=180224
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1373133640 Time=17:21:44.9358 ReqCount=245760
+client_8320_1 |Gen0=13 Gen1=11 Gen2=9 Alloc=1748556024 Time=10:47:41.5048 ReqCount=188416
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1394539208 Time=17:21:47.5663 ReqCount=253952
+client_8320_1 |Running GC 190155 190155
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1415862664 Time=17:21:50.0374 ReqCount=262144
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1211981744 Time=10:48:19.4665 ReqCount=196608
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1437137120 Time=17:21:52.3743 ReqCount=270336
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1226792848 Time=10:48:25.4671 ReqCount=204800
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1458534144 Time=17:21:54.5970 ReqCount=278528
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1241800360 Time=10:48:30.0584 ReqCount=212992
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1479775776 Time=17:21:56.7203 ReqCount=286720
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1256570416 Time=10:48:33.9239 ReqCount=221184
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1501009376 Time=17:21:58.7563 ReqCount=294912
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1271422320 Time=10:48:37.3274 ReqCount=229376
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1522382112 Time=17:22:00.7160 ReqCount=303104
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1286397136 Time=10:48:40.4035 ReqCount=237568
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1543697632 Time=17:22:02.6066 ReqCount=311296
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1301257280 Time=10:48:43.2304 ReqCount=245760
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1565070264 Time=17:22:04.4349 ReqCount=319488
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1316223896 Time=10:48:45.8623 ReqCount=253952
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1586443040 Time=17:22:06.2069 ReqCount=327680
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1331174136 Time=10:48:48.3333 ReqCount=262144
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1607848592 Time=17:22:07.9274 ReqCount=335872
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1346050696 Time=10:48:50.6700 ReqCount=270336
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1629221448 Time=17:22:09.6030 ReqCount=344064
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1361017296 Time=10:48:52.8924 ReqCount=278528
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1650364864 Time=17:22:11.2304 ReqCount=352256
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1375959376 Time=10:48:55.0165 ReqCount=286720
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1671803096 Time=17:22:12.8202 ReqCount=360448
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1390893296 Time=10:48:57.0527 ReqCount=294912
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1693159384 Time=17:22:14.3723 ReqCount=368640
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1405786240 Time=10:48:59.0120 ReqCount=303104
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1714401112 Time=17:22:15.8891 ReqCount=376832
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1420712000 Time=10:49:00.9021 ReqCount=311296
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1735814768 Time=17:22:17.3740 ReqCount=385024
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1435686784 Time=10:49:02.7308 ReqCount=319488
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1757187608 Time=17:22:18.8281 ReqCount=393216
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1450538760 Time=10:49:04.5031 ReqCount=327680
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1778560072 Time=17:22:20.2532 ReqCount=401408
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1465480792 Time=10:49:06.2236 ReqCount=335872
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1799867360 Time=17:22:21.6504 ReqCount=409600
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1480455632 Time=10:49:07.8968 ReqCount=344064
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1821231184 Time=17:22:23.0226 ReqCount=417792
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1495242088 Time=10:49:09.5266 ReqCount=352256
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1842587624 Time=17:22:24.3704 ReqCount=425984
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1510241496 Time=10:49:11.1161 ReqCount=360448
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1863869520 Time=17:22:25.6955 ReqCount=434176
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1525085192 Time=10:49:12.6687 ReqCount=368640
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1885094704 Time=17:22:26.9986 ReqCount=442368
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1541117304 Time=10:49:14.1852 ReqCount=376832
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1906472456 Time=17:22:28.2802 ReqCount=450560
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1556042984 Time=10:49:15.6701 ReqCount=385024
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1927787800 Time=17:22:29.5424 ReqCount=458752
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1570935976 Time=10:49:17.1235 ReqCount=393216
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1949185184 Time=17:22:30.7853 ReqCount=466944
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1585861568 Time=10:49:18.5491 ReqCount=401408
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1970426936 Time=17:22:32.0108 ReqCount=475136
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1600754592 Time=10:49:19.9471 ReqCount=409600
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=1991930656 Time=17:22:33.2182 ReqCount=483328
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1615680240 Time=10:49:21.3190 ReqCount=417792
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2013295240 Time=17:22:34.4092 ReqCount=491520
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1630679768 Time=10:49:22.6668 ReqCount=425984
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2034545104 Time=17:22:35.5840 ReqCount=499712
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1645597152 Time=10:49:23.9912 ReqCount=434176
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2055889552 Time=17:22:36.7440 ReqCount=507904
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1660498256 Time=10:49:25.2944 ReqCount=442368
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2077319720 Time=17:22:37.8891 ReqCount=516096
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1675448560 Time=10:49:26.5763 ReqCount=450560
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2098399008 Time=17:22:39.0192 ReqCount=524288
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1690382424 Time=10:49:27.8383 ReqCount=458752
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2119747248 Time=17:22:40.1356 ReqCount=532480
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1705349104 Time=10:49:29.0816 ReqCount=466944
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2141256424 Time=17:22:41.2393 ReqCount=540672
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1720143728 Time=10:49:30.3072 ReqCount=475136
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2162615344 Time=17:22:42.3303 ReqCount=548864
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1735102184 Time=10:49:31.5141 ReqCount=483328
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2183931672 Time=17:22:43.4088 ReqCount=557056
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1750068824 Time=10:49:32.7057 ReqCount=491520
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2205259472 Time=17:22:44.4756 ReqCount=565248
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1765084712 Time=10:49:33.8806 ReqCount=499712
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2226612368 Time=17:22:45.5309 ReqCount=573440
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1780035024 Time=10:49:35.0398 ReqCount=507904
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2247984848 Time=17:22:46.5749 ReqCount=581632
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1794985304 Time=10:49:36.1848 ReqCount=516096
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2269254152 Time=17:22:47.6075 ReqCount=589824
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1809706160 Time=10:49:37.3156 ReqCount=524288
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2290501336 Time=17:22:48.6298 ReqCount=598016
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1824607312 Time=10:49:38.4329 ReqCount=532480
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2311818072 Time=17:22:49.6427 ReqCount=606208
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1839582160 Time=10:49:39.5365 ReqCount=540672
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2333231416 Time=17:22:50.6448 ReqCount=614400
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1854499584 Time=10:49:40.6271 ReqCount=548864
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2354516536 Time=17:22:51.6378 ReqCount=622592
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1869433448 Time=10:49:41.7056 ReqCount=557056
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2375941864 Time=17:22:52.6220 ReqCount=630784
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1884318200 Time=10:49:42.7719 ReqCount=565248
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2397284472 Time=17:22:53.5962 ReqCount=638976
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1899293072 Time=10:49:43.8270 ReqCount=573440
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2418647520 Time=17:22:54.5615 ReqCount=647168
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1914218904 Time=10:49:44.8710 ReqCount=581632
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2439916848 Time=17:22:55.5189 ReqCount=655360
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1929193680 Time=10:49:45.9037 ReqCount=589824
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2461347896 Time=17:22:56.4674 ReqCount=663552
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1944098480 Time=10:49:46.9265 ReqCount=598016
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2482491960 Time=17:22:57.4088 ReqCount=671744
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1959007744 Time=10:49:47.9388 ReqCount=606208
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2503802656 Time=17:22:58.3408 ReqCount=679936
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1973964488 Time=10:49:48.9410 ReqCount=614400
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2525336744 Time=17:22:59.2653 ReqCount=688128
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=1988832824 Time=10:49:49.9343 ReqCount=622592
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2546647264 Time=17:23:00.1828 ReqCount=696320
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2003733928 Time=10:49:50.9176 ReqCount=630784
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2567995104 Time=17:23:01.0933 ReqCount=704512
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2018692368 Time=10:49:51.8924 ReqCount=638976
 
-client_8233_1 |Gen0=15 Gen1=13 Gen2=9 Alloc=2589374264 Time=17:23:01.9957 ReqCount=712704
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2035317440 Time=10:49:52.8581 ReqCount=647168
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1243610008 Time=17:23:02.8921 ReqCount=720896
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2050193928 Time=10:49:53.8160 ReqCount=655360
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1265031600 Time=17:23:03.7806 ReqCount=729088
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2065175624 Time=10:49:54.7640 ReqCount=663552
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1286281336 Time=17:23:04.6632 ReqCount=737280
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2079921088 Time=10:49:55.7050 ReqCount=671744
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1307522976 Time=17:23:05.5387 ReqCount=745472
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2094805840 Time=10:49:56.6371 ReqCount=679936
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1328879144 Time=17:23:06.4077 ReqCount=753664
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2109773368 Time=10:49:57.5621 ReqCount=688128
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1350227232 Time=17:23:07.2703 ReqCount=761856
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2124649944 Time=10:49:58.4794 ReqCount=696320
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1371575320 Time=17:23:08.1277 ReqCount=770048
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2139600224 Time=10:49:59.3897 ReqCount=704512
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1392923496 Time=17:23:08.9782 ReqCount=778240
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2154517688 Time=10:50:00.2921 ReqCount=712704
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1414369784 Time=17:23:09.8234 ReqCount=786432
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2169418864 Time=10:50:01.1882 ReqCount=720896
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1435717984 Time=17:23:10.6622 ReqCount=794624
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2184401824 Time=10:50:02.0771 ReqCount=729088
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1456894152 Time=17:23:11.4953 ReqCount=802816
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2199360208 Time=10:50:02.9594 ReqCount=737280
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1478357104 Time=17:23:12.3235 ReqCount=811008
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2214272280 Time=10:50:03.8345 ReqCount=745472
 
-client_8233_1 |Gen0=16 Gen1=13 Gen2=9 Alloc=1500073952 Time=17:23:13.1467 ReqCount=819200
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2229156688 Time=10:50:04.7041 ReqCount=753664
+
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2244104008 Time=10:50:05.5669 ReqCount=761856
+
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2259067424 Time=10:50:06.4244 ReqCount=770048
+
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2273899328 Time=10:50:07.2746 ReqCount=778240
+
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2288872840 Time=10:50:08.1192 ReqCount=786432
+
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2303803432 Time=10:50:08.9587 ReqCount=794624
+
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2318623912 Time=10:50:09.7921 ReqCount=802816
+
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2333777432 Time=10:50:10.6205 ReqCount=811008
+
+client_8320_1 |Gen0=14 Gen1=12 Gen2=9 Alloc=2348941408 Time=10:50:11.4430 ReqCount=819200
+
+client_8320_1 |Running GC 820154 820154
