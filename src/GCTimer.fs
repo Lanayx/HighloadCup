@@ -8,7 +8,7 @@ let mutable GCRun = false
 
 let syncTimer = new System.Timers.Timer(500.0)
 syncTimer.Elapsed.Add(fun arg ->
-    if (lastRequestCount > 0 && lastRequestCount = outstandingRequestCount.Value)
+    if (lastRequestCount > 10 && lastRequestCount = outstandingRequestCount.Value)
     then
         if not GCRun
         then

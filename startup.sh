@@ -2,7 +2,7 @@
 # service nginx start
 
 warmup () {
-    sleep 55
+    sleep 155
     curl -s http://127.0.0.1/users/8
     curl -s -o /dev/null http://127.0.0.1/visits/8
     curl -s -o /dev/null http://127.0.0.1/locations/8
