@@ -25,7 +25,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
     <PackageReference Include="System.Buffers" Version="4.4.0" />
-    <PackageReference Include="Utf8Json" Version="1.0.5" />
+    <PackageReference Include="Utf8Json" Version="1.0.6" />
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="2.0.0" />
