@@ -106,7 +106,7 @@ let inline checkStringFromRequest (stringValue: string) =
     stringValue.Contains(": null") |> not
 
 let getUser(id, next, ctx) = 
-    if (id > users.Length)
+    if (id > UsersSize)
     then setStatusCode 404 next ctx
         else
             let user = users.[id]
@@ -115,7 +115,7 @@ let getUser(id, next, ctx) =
             | _ -> jsonBuffer (serializeUser user) next ctx 
 
 let getVisit(id, next, ctx) = 
-    if (id > visits.Length)
+    if (id > VisitsSize)
     then setStatusCode 404 next ctx
         else
             let visit = visits.[id]
@@ -124,7 +124,7 @@ let getVisit(id, next, ctx) =
             | _ -> jsonBuffer (serializeVisit visit) next ctx  
 
 let getLocation(id, next, ctx) = 
-    if (id > locations.Length)
+    if (id > LocationsSize)
     then setStatusCode 404 next ctx
         else
             let location = locations.[id]
@@ -201,7 +201,7 @@ let updateVisitInternal (oldVisit:Visit) json =
         false
 
 let updateVisit (id: int, next : HttpFunc, httpContext: HttpContext) =
-    if (id > visits.Length)
+    if (id > VisitsSize)
     then setStatusCode 404 next httpContext
     else
         let oldEntity = visits.[id]
@@ -217,7 +217,7 @@ let updateVisit (id: int, next : HttpFunc, httpContext: HttpContext) =
             }
 
 let updateUser (id: int, next : HttpFunc, httpContext: HttpContext) =
-    if (id > users.Length)
+    if (id > UsersSize)
     then setStatusCode 404 next httpContext
     else
         let oldEntity = users.[id]
@@ -233,7 +233,7 @@ let updateUser (id: int, next : HttpFunc, httpContext: HttpContext) =
             }
 
 let updateLocation (id: int, next : HttpFunc, httpContext: HttpContext) =
-    if (id > locations.Length)
+    if (id > LocationsSize)
     then setStatusCode 404 next httpContext
     else
         let oldEntity = locations.[id]
@@ -348,7 +348,7 @@ let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
     //     && (String.IsNullOrEmpty(query.country) || location.country = query.country)
 
 let getUserVisits (userId, next : HttpFunc, httpContext: HttpContext) = 
-    if (userId > users.Length)
+    if (userId > UsersSize)
     then setStatusCode 404 next httpContext
     else
         let user = users.[userId]
@@ -437,7 +437,7 @@ let inline filterByQueryAvg (query: QueryAvg) (visit: Visit) =
 
 
 let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) = 
-    if (locationId > locations.Length)
+    if (locationId > LocationsSize)
     then setStatusCode 404 next httpContext
     else
         let location = locations.[locationId]
