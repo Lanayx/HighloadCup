@@ -52,9 +52,6 @@ let jsonStringValues = StringValues "application/json"
 
 type UpdateEntity<'a> = 'a -> string -> bool
 type IdHandler = int*HttpFunc*HttpContext -> HttpFuncResult
- 
-let inline serializeObject obj =
-    JSON.Serialize(obj)
 
 let inline deserializeObjectUnsafe<'a> (str: string) =
     JSON.Deserialize<'a>(str)
@@ -85,9 +82,6 @@ let copyUser (user: UserOld) =
     us.gender <- user.gender
     us
 
-let inline jsonCustom str (next : HttpFunc) (httpContext: HttpContext) =
-    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString str <| next <| httpContext
-
 let inline jsonBuffer (response : MemoryStream) =
     fun (next : HttpFunc) (ctx: HttpContext) ->
         let length = response.Position
@@ -99,8 +93,7 @@ let inline jsonBuffer (response : MemoryStream) =
             do! ctx.Response.Body.FlushAsync()
             ArrayPool.Shared.Return bytes
             return! next ctx
-        }
-        
+        }        
 
 let inline checkStringFromRequest (stringValue: string) = 
     stringValue.Contains(": null") |> not
@@ -394,7 +387,6 @@ let inline convertToDate timestamp =
 let inline diffYears (startDate: DateTime) (endDate: DateTime) =
     (endDate.Year - startDate.Year - 1) + (if ((endDate.Month > startDate.Month) || ((endDate.Month = startDate.Month) && (endDate.Day >= startDate.Day))) then 1 else 0)
 
-
 let inline filterByQueryAvg (query: QueryAvg) (visit: Visit) =
     let user = users.[visit.user]
     match query.fromDate with
@@ -533,8 +525,6 @@ let customPostRoutef : HttpHandler =
                 then updateLocation(id.Value, next, ctx)
                 else setStatusCode 404 next ctx
         | _-> shortCircuit
-
-
 
 
 let webApp = 
