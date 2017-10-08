@@ -8,6 +8,7 @@ open System.Collections.Generic
 open System.Collections.Concurrent
 open System.Threading.Tasks
 open System.Text
+open System.Threading
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
@@ -26,6 +27,7 @@ open HCup.RequestCounter
 open HCup.Actors
 open HCup.Parser
 open HCup.BufferSerializers
+open HCup.MethodCounter
 
 // ---------------------------------
 // Web app
@@ -99,6 +101,7 @@ let inline checkStringFromRequest (stringValue: string) =
     stringValue.Contains(": null") |> not
 
 let getUser(id, next, ctx) = 
+    Interlocked.Increment(getUserCount) |> ignore
     if (id > UsersSize)
     then setStatusCode 404 next ctx
         else
@@ -108,6 +111,7 @@ let getUser(id, next, ctx) =
             | _ -> jsonBuffer (serializeUser user) next ctx 
 
 let getVisit(id, next, ctx) = 
+    Interlocked.Increment(getVisitCount) |> ignore
     if (id > VisitsSize)
     then setStatusCode 404 next ctx
         else
@@ -117,6 +121,7 @@ let getVisit(id, next, ctx) =
             | _ -> jsonBuffer (serializeVisit visit) next ctx  
 
 let getLocation(id, next, ctx) = 
+    Interlocked.Increment(getLocationCount) |> ignore
     if (id > LocationsSize)
     then setStatusCode 404 next ctx
         else
@@ -337,6 +342,7 @@ let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
     (String.IsNullOrEmpty(query.country) || location.country = query.country)
 
 let getUserVisits (userId, next : HttpFunc, httpContext: HttpContext) = 
+    Interlocked.Increment(getVisitsCount) |> ignore
     if (userId > UsersSize)
     then setStatusCode 404 next httpContext
     else
@@ -414,7 +420,8 @@ let inline filterByQueryAvg (query: QueryAvg) (visit: Visit) =
         (diffYears (user.birth_date |> convertToDate) currentDate ) >= fromAge
     | _ -> true
 
-let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) = 
+let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) =
+    Interlocked.Increment(getAvgCount) |> ignore 
     if (locationId > LocationsSize)
     then setStatusCode 404 next httpContext
     else
