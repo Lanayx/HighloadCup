@@ -342,10 +342,6 @@ let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
     | _ -> true
     &&
     (String.IsNullOrEmpty(query.country) || location.country = query.country)
-    // checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
-    //     && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
-    //     && (checkParseResult query.toDistance (fun toDistance -> location.distance < toDistance))
-    //     && (String.IsNullOrEmpty(query.country) || location.country = query.country)
 
 let getUserVisits (userId, next : HttpFunc, httpContext: HttpContext) = 
     if (userId > UsersSize)
@@ -373,8 +369,6 @@ let getUserVisits (userId, next : HttpFunc, httpContext: HttpContext) =
 
 [<Struct>]
 type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<char>}
-
-
 
 
 let getAvgMarkQuery (httpContext: HttpContext) =
@@ -428,14 +422,6 @@ let inline filterByQueryAvg (query: QueryAvg) (visit: Visit) =
         (diffYears (user.birth_date |> convertToDate) currentDate ) >= fromAge
     | _ -> true
 
-    // checkParseResult query.fromDate (fun fromDate -> visit.visited_at > fromDate)
-    //     && (checkParseResult query.toDate (fun toDate -> visit.visited_at < toDate))
-    //     && (checkParseResult query.gender (fun gender -> user.gender = gender))
-    //     && (checkParseResult query.toAge (fun toAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) <  toAge))
-    //     && (checkParseResult query.fromAge (fun fromAge -> (diffYears (user.birth_date |> convertToDate) currentDate ) >= fromAge))
-
-
-
 let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) = 
     if (locationId > LocationsSize)
     then setStatusCode 404 next httpContext
@@ -467,8 +453,6 @@ let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) =
 let private usersPathString = PathString("/users")
 let private visitsPathString = PathString("/visits")
 let private locationsPathString = PathString("/locations")
-
-
 
 let inline private tryParseId stringId (f: IdHandler) next ctx =
    let id = ref 0
@@ -564,7 +548,6 @@ let webApp =
 // ---------------------------------
 
 let errorHandler (ex : Exception) (logger : ILogger)=
-    // logger.LogError(ex.ToString())
     setStatusCode 400
 
 // ---------------------------------
@@ -573,11 +556,9 @@ let errorHandler (ex : Exception) (logger : ILogger)=
 
 let configureApp (app : IApplicationBuilder) = 
     app.UseRequestCounter webApp
-    // app.UseGiraffeErrorHandler errorHandler
     app.UseGiraffe webApp
 
 let configureKestrel (options : KestrelServerOptions) =
-    // options.ListenUnixSocket "/tmp/tkestrel.sock"
     options.ApplicationSchedulingMode <- Abstractions.Internal.SchedulingMode.Inline
     options.AllowSynchronousIO <- false
 
@@ -634,7 +615,6 @@ let main argv =
     GC.Collect(2)
     WebHostBuilder()
         .UseKestrel(Action<KestrelServerOptions> configureKestrel)
-        // .UseUrls("http://0.0.0.0:80")
         .Configure(Action<IApplicationBuilder> configureApp)
         .Build()
         .Run()

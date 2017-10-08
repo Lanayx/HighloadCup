@@ -16,9 +16,6 @@
     <Compile Include="RequestCounter.fs" />
     <Compile Include="Actors.fs" />
     <Compile Include="Parser.fs" />
-    <!-- <Compile Include="StringBuilderCache.fs" /> -->
-    <!-- <Compile Include="Serializers.fs" /> -->
-    <!-- <Compile Include="CharSerializers.fs" /> -->
     <Compile Include="BufferSerializers.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

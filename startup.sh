@@ -1,5 +1,4 @@
 #!/bin/bash
-# service nginx start
 
 warmup () {
     sleep 155

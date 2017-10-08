@@ -4,7 +4,6 @@ $tag = if ($env:COMPUTERNAME -eq 'CTHULHU-3') { 'stor.highloadcup.ru/travels/nic
 Set-Location src
 .\build.cmd
 Set-Location ..
-# get-childitem -path ".\kestrel" -recurse | copy-item -destination ".\artifacts"
 docker build -t $container .
 # docker run -it --rm -p 80:80 $container
 # docker login stor.highloadcup.ru
