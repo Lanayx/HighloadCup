@@ -24,6 +24,20 @@ Latest results:
 
 ![3d](http://clip2net.com/clip/m380071/97bb6-clip-55kb.png)
 
+
+Avg method execution (name, 1st round, 3d round):
+
+getUser 414,2895192 887,120183
+
+getVisit 336,3300137 714,8307011
+
+getLocation 325,1632607 703,3726324
+
+getAvgMark 360,832458 736,243506
+
+getUserVisits 373,2613106 728,9778824
+
+
 Logs:
 
 
