@@ -449,9 +449,12 @@ let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) =
                 jsonBuffer (serializeAvg avg) next httpContext
             | Non -> setStatusCode 400 next httpContext    
 
-let private usersPathString = PathString("/users")
-let private visitsPathString = PathString("/visits")
-let private locationsPathString = PathString("/locations")
+let private usersPathString = "/users"
+let private usersPathStringX = PathString("/users")
+let private visitsPathString = "/visits"
+let private visitsPathStringX = PathString("/visits")
+let private locationsPathString = "/locations"
+let private locationsPathStringX = PathString("/locations")
 
 let inline private tryParseId stringId (f: IdHandler) next ctx =
    let id = ref 0
@@ -461,37 +464,50 @@ let inline private tryParseId stringId (f: IdHandler) next ctx =
 
 let customGetRoutef : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) ->
-        let remaining = ref PathString.Empty
         let id = ref 0
-        match ctx.Request.Path with
-        | visitPath when (visitPath.StartsWithSegments(visitsPathString, remaining)) ->
-             if Int32.TryParse(remaining.Value.Value.Substring(1), id)
-             then getVisit(id.Value, next, ctx)
-             else setStatusCode 404 next ctx
-        | userPath when (userPath.StartsWithSegments(usersPathString, remaining)) -> 
-            let pathString = remaining.Value.Value;
-            let slashIndex = pathString.IndexOf("/visits", StringComparison.Ordinal)
-            if (slashIndex > -1)
-            then
-                if Int32.TryParse(pathString.Substring(1,slashIndex-1), id)
-                then getUserVisits(id.Value, next, ctx)
-                else setStatusCode 404 next ctx
-            else 
-                if Int32.TryParse(pathString.Substring(1), id)
+        match ctx.Request.Path.Value with
+        | visitPath when (visitPath.StartsWith(visitsPathString, StringComparison.Ordinal)) ->
+            if Int32.TryParse(visitPath.Substring(8), id)
+            then getVisit(id.Value, next, ctx)
+            else setStatusCode 404 next ctx
+        | userPath when (userPath.StartsWith(usersPathString, StringComparison.Ordinal)) -> 
+            let mutable i = 7
+            let mutable result = null
+            while i < userPath.Length-1 do
+                if (userPath.[i] = '/' && userPath.[i+1] = 'v')
+                then 
+                    if Int32.TryParse(userPath.Substring(7,i-7), id)
+                    then result <- getUserVisits(id.Value, next, ctx)
+                    else result <- setStatusCode 404 next ctx
+                    i <- userPath.Length
+                else
+                    i <- i+1
+            if isNull result 
+            then 
+                if Int32.TryParse(userPath.Substring(7), id)
                 then getUser(id.Value, next, ctx)
                 else setStatusCode 404 next ctx
-        | locationPath when (locationPath.StartsWithSegments(locationsPathString, remaining)) ->          
-            let pathString = remaining.Value.Value;
-            let slashIndex = pathString.IndexOf("/avg", StringComparison.Ordinal)
-            if (slashIndex > -1)
-            then
-                if Int32.TryParse(pathString.Substring(1,slashIndex-1), id)
-                then getAvgMark(id.Value, next, ctx)
-                else setStatusCode 404 next ctx
             else
-                if Int32.TryParse(pathString.Substring(1), id)
+                result
+        | locationPath when (locationPath.StartsWith(locationsPathString, StringComparison.Ordinal)) ->          
+            let mutable i = 11
+            let mutable result = null
+            while i < locationPath.Length-1 do
+                if (locationPath.[i] = '/' && locationPath.[i+1] = 'a')
+                then 
+                    if Int32.TryParse(locationPath.Substring(11,i-11), id)
+                    then result <- getAvgMark(id.Value, next, ctx)
+                    else result <- setStatusCode 404 next ctx
+                    i <- locationPath.Length
+                else
+                    i <- i+1
+            if isNull result 
+            then 
+                if Int32.TryParse(locationPath.Substring(11), id)
                 then getLocation(id.Value, next, ctx)
                 else setStatusCode 404 next ctx
+            else
+                result
         | _-> shortCircuit
 
 let inline private getPostRoute (newRoute: IdHandler) (updateRoute: IdHandler) (remaining: PathString ref) next ctx =
@@ -504,7 +520,7 @@ let customPostRoutef : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) ->
         let remaining = ref PathString.Empty
         match ctx.Request.Path with
-        | visitPath when (visitPath.StartsWithSegments(visitsPathString, remaining)) ->
+        | visitPath when (visitPath.StartsWithSegments(visitsPathStringX, StringComparison.Ordinal, remaining)) ->
             let pathString = remaining.Value.Value
             if pathString.Equals("/new",StringComparison.Ordinal)
             then addVisit(next, ctx)
@@ -513,7 +529,7 @@ let customPostRoutef : HttpHandler =
                 if Int32.TryParse(pathString.Substring(1), id)
                 then updateVisit(id.Value, next, ctx)
                 else setStatusCode 404 next ctx
-        | userPath when (userPath.StartsWithSegments(usersPathString, remaining)) -> 
+        | userPath when (userPath.StartsWithSegments(usersPathStringX, StringComparison.Ordinal, remaining)) -> 
             let pathString = remaining.Value.Value
             if pathString.Equals("/new",StringComparison.Ordinal)
             then addUser(next, ctx)
@@ -522,7 +538,7 @@ let customPostRoutef : HttpHandler =
                 if Int32.TryParse(pathString.Substring(1), id)
                 then updateUser(id.Value, next, ctx)
                 else setStatusCode 404 next ctx
-        | locationPath when (locationPath.StartsWithSegments(locationsPathString, remaining)) ->    
+        | locationPath when (locationPath.StartsWithSegments(locationsPathStringX, StringComparison.Ordinal, remaining)) ->    
             let pathString = remaining.Value.Value
             if pathString.Equals("/new",StringComparison.Ordinal)
             then addLocation(next, ctx)
