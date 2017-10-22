@@ -470,10 +470,22 @@ let inline private tryParseId stringId (f: IdHandler) next ctx =
 let customGetRoutef : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) ->
         let id = ref 0
+
+        let inline tryGetInt (sp: ReadOnlySpan<char>) =
+            try
+                let mutable y = 0
+                let zeroInt = (int)'0'
+                for i = 0 to sp.Length-1 do
+                    y <- y * 10 + ((int)sp.[i] - zeroInt)
+                id:= y
+                true
+            with
+            | _ -> false
+
         let pathSpan = ctx.Request.Path.Value.AsSpan()
         match pathSpan with
         | visitPath when (visitPath.StartsWith(visitsPathString)) ->
-            if visitPath.Slice(8).AsBytes().TryRead<int>(id)
+            if visitPath.Slice(8) |> tryGetInt
             then getVisit(id.Value, next, ctx)
             else setStatusCode 404 next ctx
         | userPath when (userPath.StartsWith(usersPathString)) -> 
@@ -482,7 +494,7 @@ let customGetRoutef : HttpHandler =
             while i < userPath.Length-1 do
                 if (userPath.[i] = '/' && userPath.[i+1] = 'v')
                 then 
-                    if userPath.Slice(7,i-7).AsBytes().TryRead<int>(id)
+                    if userPath.Slice(7,i-7) |> tryGetInt
                     then result <- getUserVisits(id.Value, next, ctx)
                     else result <- setStatusCode 404 next ctx
                     i <- userPath.Length
@@ -490,7 +502,7 @@ let customGetRoutef : HttpHandler =
                     i <- i+1
             if isNull result 
             then 
-                if userPath.Slice(7).AsBytes().TryRead<int>(id)
+                if userPath.Slice(7) |> tryGetInt
                 then getUser(id.Value, next, ctx)
                 else setStatusCode 404 next ctx
             else
@@ -501,7 +513,7 @@ let customGetRoutef : HttpHandler =
             while i < locationPath.Length-1 do
                 if (locationPath.[i] = '/' && locationPath.[i+1] = 'a')
                 then 
-                    if locationPath.Slice(11,i-11).AsBytes().TryRead<int>(id)
+                    if locationPath.Slice(11,i-11) |> tryGetInt
                     then result <- getAvgMark(id.Value, next, ctx)
                     else result <- setStatusCode 404 next ctx
                     i <- locationPath.Length
@@ -509,7 +521,7 @@ let customGetRoutef : HttpHandler =
                     i <- i+1
             if isNull result 
             then 
-                if locationPath.Slice(11).AsBytes().TryRead<int>(id)
+                if locationPath.Slice(11) |> tryGetInt  
                 then getLocation(id.Value, next, ctx)
                 else setStatusCode 404 next ctx
             else
