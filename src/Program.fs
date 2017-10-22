@@ -28,6 +28,11 @@ open HCup.Actors
 open HCup.Parser
 open HCup.BufferSerializers
 open HCup.MethodCounter
+open Microsoft.AspNetCore.Server.Kestrel.Internal.System
+open Microsoft.AspNetCore.Server.Kestrel.Internal.System.Text
+open Microsoft.AspNetCore.Server.Kestrel.Internal.System.IO
+open Microsoft.AspNetCore.Server.Kestrel.Internal.System.Buffers
+open Microsoft.AspNetCore.Server.Kestrel.Internal.System.Binary
 
 // ---------------------------------
 // Web app
@@ -449,11 +454,11 @@ let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) =
                 jsonBuffer (serializeAvg avg) next httpContext
             | Non -> setStatusCode 400 next httpContext    
 
-let private usersPathString = "/users"
+let private usersPathString = "/users".AsSpan()
 let private usersPathStringX = PathString("/users")
-let private visitsPathString = "/visits"
+let private visitsPathString = "/visits".AsSpan()
 let private visitsPathStringX = PathString("/visits")
-let private locationsPathString = "/locations"
+let private locationsPathString = "/locations".AsSpan()
 let private locationsPathStringX = PathString("/locations")
 
 let inline private tryParseId stringId (f: IdHandler) next ctx =
@@ -465,18 +470,19 @@ let inline private tryParseId stringId (f: IdHandler) next ctx =
 let customGetRoutef : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) ->
         let id = ref 0
-        match ctx.Request.Path.Value with
-        | visitPath when (visitPath.StartsWith(visitsPathString, StringComparison.Ordinal)) ->
-            if Int32.TryParse(visitPath.Substring(8), id)
+        let pathSpan = ctx.Request.Path.Value.AsSpan()
+        match pathSpan with
+        | visitPath when (visitPath.StartsWith(visitsPathString)) ->
+            if visitPath.Slice(8).AsBytes().TryRead<int>(id)
             then getVisit(id.Value, next, ctx)
             else setStatusCode 404 next ctx
-        | userPath when (userPath.StartsWith(usersPathString, StringComparison.Ordinal)) -> 
+        | userPath when (userPath.StartsWith(usersPathString)) -> 
             let mutable i = 7
             let mutable result = null
             while i < userPath.Length-1 do
                 if (userPath.[i] = '/' && userPath.[i+1] = 'v')
                 then 
-                    if Int32.TryParse(userPath.Substring(7,i-7), id)
+                    if userPath.Slice(7,i-7).AsBytes().TryRead<int>(id)
                     then result <- getUserVisits(id.Value, next, ctx)
                     else result <- setStatusCode 404 next ctx
                     i <- userPath.Length
@@ -484,18 +490,18 @@ let customGetRoutef : HttpHandler =
                     i <- i+1
             if isNull result 
             then 
-                if Int32.TryParse(userPath.Substring(7), id)
+                if userPath.Slice(7).AsBytes().TryRead<int>(id)
                 then getUser(id.Value, next, ctx)
                 else setStatusCode 404 next ctx
             else
                 result
-        | locationPath when (locationPath.StartsWith(locationsPathString, StringComparison.Ordinal)) ->          
+        | locationPath when (locationPath.StartsWith(locationsPathString)) ->          
             let mutable i = 11
             let mutable result = null
             while i < locationPath.Length-1 do
                 if (locationPath.[i] = '/' && locationPath.[i+1] = 'a')
                 then 
-                    if Int32.TryParse(locationPath.Substring(11,i-11), id)
+                    if locationPath.Slice(11,i-11).AsBytes().TryRead<int>(id)
                     then result <- getAvgMark(id.Value, next, ctx)
                     else result <- setStatusCode 404 next ctx
                     i <- locationPath.Length
@@ -503,7 +509,7 @@ let customGetRoutef : HttpHandler =
                     i <- i+1
             if isNull result 
             then 
-                if Int32.TryParse(locationPath.Substring(11), id)
+                if locationPath.Slice(11).AsBytes().TryRead<int>(id)
                 then getLocation(id.Value, next, ctx)
                 else setStatusCode 404 next ctx
             else
