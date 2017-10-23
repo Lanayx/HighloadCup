@@ -462,49 +462,41 @@ let private locationsPathString = "/locations".AsSpan()
 let private locationsPathStringX = PathString("/locations")
 
 let inline private tryParseId stringId (f: IdHandler) next ctx =
-   let id = ref 0
-   if Int32.TryParse(stringId, id)
-   then f(id.Value, next, ctx)
-   else setStatusCode 404 next ctx
+    let id = ref 0
+    if Int32.TryParse(stringId, id)
+    then f(id.Value, next, ctx)
+    else setStatusCode 404 next ctx
+
+let zeroInt = (int)'0'
+let inline parseInt (sp: ReadOnlySpan<char>) =
+    let mutable y = 0
+    let spLength = sp.Length-1 
+    for i = 0 to spLength do
+        y <- y * 10 + ((int)sp.[i] - zeroInt)
+    y
 
 let customGetRoutef : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) ->
-        let id = ref 0
-
-        let inline tryGetInt (sp: ReadOnlySpan<char>) =
-            try
-                let mutable y = 0
-                let zeroInt = (int)'0'
-                for i = 0 to sp.Length-1 do
-                    y <- y * 10 + ((int)sp.[i] - zeroInt)
-                id:= y
-                true
-            with
-            | _ -> false
-
         let pathSpan = ctx.Request.Path.Value.AsSpan()
         match pathSpan with
         | visitPath when (visitPath.StartsWith(visitsPathString)) ->
-            if visitPath.Slice(8) |> tryGetInt
-            then getVisit(id.Value, next, ctx)
-            else setStatusCode 404 next ctx
+            let id = visitPath.Slice(8) |> parseInt
+            getVisit(id, next, ctx)
         | userPath when (userPath.StartsWith(usersPathString)) -> 
             let mutable i = 7
             let mutable result = null
             while i < userPath.Length-1 do
                 if (userPath.[i] = '/' && userPath.[i+1] = 'v')
                 then 
-                    if userPath.Slice(7,i-7) |> tryGetInt
-                    then result <- getUserVisits(id.Value, next, ctx)
-                    else result <- setStatusCode 404 next ctx
+                    let id = userPath.Slice(7,i-7) |> parseInt
+                    result <- getUserVisits(id, next, ctx)
                     i <- userPath.Length
                 else
                     i <- i+1
             if isNull result 
             then 
-                if userPath.Slice(7) |> tryGetInt
-                then getUser(id.Value, next, ctx)
-                else setStatusCode 404 next ctx
+                let id = userPath.Slice(7) |> parseInt
+                getUser(id, next, ctx)
             else
                 result
         | locationPath when (locationPath.StartsWith(locationsPathString)) ->          
@@ -513,17 +505,15 @@ let customGetRoutef : HttpHandler =
             while i < locationPath.Length-1 do
                 if (locationPath.[i] = '/' && locationPath.[i+1] = 'a')
                 then 
-                    if locationPath.Slice(11,i-11) |> tryGetInt
-                    then result <- getAvgMark(id.Value, next, ctx)
-                    else result <- setStatusCode 404 next ctx
+                    let id = locationPath.Slice(11,i-11) |> parseInt
+                    result <- getAvgMark(id, next, ctx)
                     i <- locationPath.Length
                 else
                     i <- i+1
             if isNull result 
             then 
-                if locationPath.Slice(11) |> tryGetInt  
-                then getLocation(id.Value, next, ctx)
-                else setStatusCode 404 next ctx
+                let id = locationPath.Slice(11) |> parseInt  
+                getLocation(id, next, ctx)
             else
                 result
         | _-> shortCircuit
