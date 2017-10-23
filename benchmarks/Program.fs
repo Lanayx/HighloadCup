@@ -1,6 +1,7 @@
 ﻿open System
 open System.Buffers
 open System.IO
+open System.Text
 
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Running
@@ -103,9 +104,42 @@ type SerializerBenchmarks() =
     member __.WriteInt32Bufferless() =
         Array.mapi(fun i n -> writeInt32Bufferless buffers.[i] n; buffers.[i]) numbers
 
+let formatCache = sprintf "Int: %iString: %sBool:%b"
+
+type StringBenchmarks() =
+
+    member val a = 100
+
+    member val b = "abcde"
+    member val c = false
+
+    [<Benchmark>]
+    member this.StringBuilderRun() =
+        let x = StringBuilder()
+        x.Append("Int: ").Append(this.a).Append("String: ").Append(this.b).Append("Bool: ").Append(this.c).ToString()
+
+    [<Benchmark>]
+    member this.StringFormat() =
+        String.Format("Int: {0}String: {1}Bool: {2}",this.a,this.b,this.c)
+
+    [<Benchmark>]
+    member this.FsharpFormat() =
+        sprintf "Int: %iString: %sBool:%b" this.a this.b this.c
+
+
+    [<Benchmark>]
+    member this.FsharpFormatCached() =
+        formatCache this.a this.b this.c
+
+    [<Benchmark>]
+    member this.StringConcat() =
+        "Int: " + (string)this.a + "String: " + this.b + "Bool: " + (string)this.c
+
+
 [<EntryPoint>]
 let main argv =
-    ignore <| BenchmarkRunner.Run<SerializerBenchmarks>()
+    //ignore <| BenchmarkRunner.Run<SerializerBenchmarks>()
+    ignore <| BenchmarkRunner.Run<StringBenchmarks>()
     0
 
 (*                  Method |     Mean |    Error |   StdDev |
