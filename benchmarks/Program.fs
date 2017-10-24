@@ -105,6 +105,7 @@ type SerializerBenchmarks() =
         Array.mapi(fun i n -> writeInt32Bufferless buffers.[i] n; buffers.[i]) numbers
 
 let formatCache = sprintf "Int: %iString: %sBool: %bFloat: %f"
+let formatCacheIntelliFactory = IntelliFactory.Printf.sprintf "Int: %iString: %sBool: %bFloat: %f"
 
 type StringBenchmarks() =
 
@@ -133,6 +134,14 @@ type StringBenchmarks() =
     [<Benchmark>]
     member this.FsharpFormatCached() =
         formatCache this.a this.b this.c this.d
+
+    [<Benchmark>]
+    member this.IntelliFactoryFormat() =
+        IntelliFactory.Printf.sprintf "Int: %iString: %sBool: %bFloat: %f" this.a this.b this.c this.d
+
+    [<Benchmark>]
+    member this.IntelliFactoryFormatCached() =
+        formatCacheIntelliFactory this.a this.b this.c this.d
 
     [<Benchmark>]
     member this.ConcatOneByOne() =
