@@ -15,18 +15,12 @@ open Juraff.HttpHandlers
 /// ---------------------------
 
 type GiraffeMiddleware (next          : RequestDelegate,
-                        handler       : HttpHandler,
-                        loggerFactory : ILoggerFactory) =
+                        handler       : HttpHandler) =
 
     // pre-compile the handler pipeline
-    let func : HttpFunc = handler (Some >> Task.FromResult)
 
     member __.Invoke (ctx : HttpContext) =
-        task {
-            let! result = func ctx
-            if (result.IsNone) then
-                return! next.Invoke ctx
-        } :> Task
+        handler ctx
 
 /// ---------------------------
 /// Extension methods for convenience

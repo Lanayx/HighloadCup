@@ -6,13 +6,10 @@ open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
-open Juraff.HttpHandlers
-open Juraff.Tasks
 open GCTimer
 
 
-type RequestCounterMiddleware (next : RequestDelegate,
-                               handler : HttpHandler) =
+type RequestCounterMiddleware (next : RequestDelegate) =
 
     member __.Invoke (ctx : HttpContext) =
         let reqCount = Interlocked.Increment(outstandingRequestCount)
@@ -28,6 +25,6 @@ type RequestCounterMiddleware (next : RequestDelegate,
         next.Invoke ctx
 
 type IApplicationBuilder with
-    member this.UseRequestCounter (handler : HttpHandler) =
-        this.UseMiddleware<RequestCounterMiddleware> handler
+    member this.UseRequestCounter () =
+        this.UseMiddleware<RequestCounterMiddleware> ()
         |> ignore

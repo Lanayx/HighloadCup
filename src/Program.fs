@@ -53,7 +53,6 @@ let userVisits = Array.zeroCreate<VisitsCollectionSorted> UsersSize
 let jsonStringValues = StringValues "application/json"
 
 type UpdateEntity<'a> = 'a -> string -> bool
-type IdHandler = int*HttpFunc*HttpContext -> HttpFuncResult
 
 let inline deserializeObjectUnsafe<'a> (str: string) =
     JSON.Deserialize<'a>(str)
@@ -85,7 +84,7 @@ let copyUser (user: UserOld) =
     us
 
 let inline jsonBuffer (response : MemoryStream) =
-    fun (next : HttpFunc) (ctx: HttpContext) ->
+    fun (ctx: HttpContext) ->
         let length = response.Position
         ctx.Response.Headers.["Content-Type"] <- jsonStringValues
         ctx.Response.Headers.ContentLength <- Nullable(length)
@@ -94,41 +93,40 @@ let inline jsonBuffer (response : MemoryStream) =
             do! ctx.Response.Body.WriteAsync(bytes, 0, (int32)length)
             do! ctx.Response.Body.FlushAsync()
             ArrayPool.Shared.Return bytes
-            return! next ctx
-        }        
+        }
 
 let inline checkStringFromRequest (stringValue: string) = 
     stringValue.Contains(": null") |> not
 
-let getUser(id, next, ctx) = 
+let getUser(id, ctx) = 
     Interlocked.Increment(getUserCount) |> ignore
     if (id > UsersSize)
-    then setStatusCode 404 next ctx
+    then setStatusCode 404 ctx
         else
             let user = users.[id]
             match box user with       
-            | null -> setStatusCode 404 next ctx
-            | _ -> jsonBuffer (serializeUser user) next ctx 
+            | null -> setStatusCode 404 ctx
+            | _ -> jsonBuffer (serializeUser user) ctx 
 
-let getVisit(id, next, ctx) = 
+let getVisit(id, ctx) = 
     Interlocked.Increment(getVisitCount) |> ignore
     if (id > VisitsSize)
-    then setStatusCode 404 next ctx
+    then setStatusCode 404 ctx
         else
             let visit = visits.[id]
             match box visit with     
-            | null -> setStatusCode 404 next ctx
-            | _ -> jsonBuffer (serializeVisit visit) next ctx  
+            | null -> setStatusCode 404 ctx
+            | _ -> jsonBuffer (serializeVisit visit) ctx  
 
-let getLocation(id, next, ctx) = 
+let getLocation(id, ctx) = 
     Interlocked.Increment(getLocationCount) |> ignore
     if (id > LocationsSize)
-    then setStatusCode 404 next ctx
+    then setStatusCode 404 ctx
         else
             let location = locations.[id]
             match box location with      
-            | null -> setStatusCode 404 next ctx
-            | _ -> jsonBuffer (serializeLocation location) next ctx
+            | null -> setStatusCode 404 ctx
+            | _ -> jsonBuffer (serializeLocation location) ctx
 
 let updateLocationInternal (oldLocation:Location) json = 
     if checkStringFromRequest json
@@ -198,75 +196,86 @@ let updateVisitInternal (oldVisit:Visit) json =
     else
         false
 
-let updateVisit (id: int, next : HttpFunc, httpContext: HttpContext) =
+let updateVisit (id: int, httpContext: HttpContext) =
     if (id > VisitsSize)
-    then setStatusCode 404 next httpContext
+    then setStatusCode 404 httpContext
     else
         let oldEntity = visits.[id]
         match box oldEntity with    
         | null -> 
-            setStatusCode 404 next httpContext
+            setStatusCode 404 httpContext
         | _ -> 
             task {
                 let! json = httpContext.ReadBodyFromRequest()
                 if updateVisitInternal oldEntity json
-                then return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
-                else return! setStatusCode 400 next httpContext
+                then 
+                    setHttpHeaderSimple "Content-Type" "application/json" <| httpContext 
+                    return! setBodyAsString "{}" <| httpContext 
+                else 
+                    return! setStatusCode 400 httpContext
             }
+            
 
-let updateUser (id: int, next : HttpFunc, httpContext: HttpContext) =
+let updateUser (id: int, httpContext: HttpContext) =
     if (id > UsersSize)
-    then setStatusCode 404 next httpContext
+    then setStatusCode 404 httpContext
     else
         let oldEntity = users.[id]
         match box oldEntity with    
         | null -> 
-            setStatusCode 404 next httpContext
+            setStatusCode 404 httpContext
         | _ -> 
             task {
                 let! json = httpContext.ReadBodyFromRequest()
                 if updateUserInternal oldEntity json
-                then return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
-                else return! setStatusCode 400 next httpContext
+                then 
+                    setHttpHeaderSimple "Content-Type" "application/json" <| httpContext 
+                    return! setBodyAsString "{}" <| httpContext 
+                else
+                    return! setStatusCode 400 httpContext
             }
 
-let updateLocation (id: int, next : HttpFunc, httpContext: HttpContext) =
+let updateLocation (id: int, httpContext: HttpContext) =
     if (id > LocationsSize)
-    then setStatusCode 404 next httpContext
+    then setStatusCode 404 httpContext
     else
         let oldEntity = locations.[id]
         match box oldEntity with    
         | null -> 
-            setStatusCode 404 next httpContext
+            setStatusCode 404 httpContext
         | _ -> 
             task {
                 let! json = httpContext.ReadBodyFromRequest()
                 if updateLocationInternal oldEntity json 
-                then return! setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext 
-                else return! setStatusCode 400 next httpContext
+                then 
+                    setHttpHeaderSimple "Content-Type" "application/json" <| httpContext 
+                    return! setBodyAsString "{}" <| httpContext 
+                else 
+                    return! setStatusCode 400 httpContext
             }
 
-let addLocationInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
+let addLocationInternal stringValue (httpContext: HttpContext) =
     match deserializeObject<LocationOld>(stringValue) with
     | Some location ->  
         if (location.city |> isNull || location.country |> isNull || location.place |> isNull)
-        then setStatusCode 400 next httpContext
+        then setStatusCode 400 httpContext
         else
             match box locations.[location.id] with  
                             | null -> 
                                     locations.[location.id] <- copyLocation(location)
                                     locationVisits.[location.id] <- VisitsCollection()
-                                    setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                            | _ -> setStatusCode 400 next httpContext
-    | None -> setStatusCode 400 next httpContext
+                                    setHttpHeaderSimple "Content-Type" "application/json" <| httpContext
+                                    setBodyAsString "{}" <| httpContext
+                            | _ -> setStatusCode 400 httpContext
+    | None -> setStatusCode 400 httpContext
 
-let addLocation (next : HttpFunc, httpContext: HttpContext) = 
+let addLocation (httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()     
-        return! addLocationInternal stringValue next httpContext
+        return! addLocationInternal stringValue httpContext
     }
 
-let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =     
+let addVisitInternal stringValue (httpContext: HttpContext) =     
     match deserializeObject<Visit>(stringValue) with
     | Some visit ->
         match box visits.[visit.id] with 
@@ -274,34 +283,35 @@ let addVisitInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
               visits.[visit.id] <- visit                                
               VisitActor.AddLocationVisit visit.location locationVisits.[visit.location] visit.id                         
               VisitActor.AddUserVisit visit.user userVisits.[visit.user] visit.id visit.visited_at
-              setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-        | _ -> setStatusCode 400 next httpContext
-    | None -> setStatusCode 400 next httpContext
+              setHttpHeaderSimple "Content-Type" "application/json" <| httpContext
+              setBodyAsString "{}" <| httpContext
+        | _ -> setStatusCode 400 httpContext
+    | None -> setStatusCode 400 httpContext
 
-let addVisit (next : HttpFunc, httpContext: HttpContext) = 
+let addVisit (httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()
-        return! addVisitInternal stringValue next httpContext
+        return! addVisitInternal stringValue httpContext
     }
 
-let addUserInternal stringValue (next : HttpFunc) (httpContext: HttpContext) =
+let addUserInternal stringValue (httpContext: HttpContext) =
     match deserializeObject<UserOld>(stringValue) with
     | Some user ->
         if (user.email |> isNull || user.first_name |> isNull || user.last_name |> isNull)
-        then setStatusCode 400 next httpContext
+        then setStatusCode 400 httpContext
         else
             match box users.[user.id] with 
                              | null ->
                                        users.[user.id] <- copyUser(user)
                                        userVisits.[user.id] <- VisitsCollectionSorted()
-                                       setHttpHeader "Content-Type" "application/json" >=> setBodyAsString "{}" <| next <| httpContext
-                             | _ -> setStatusCode 400 next httpContext
-    | None -> setStatusCode 400 next httpContext
+                                       setHttpHeaderSimple "Content-Type" "application/json" <| httpContext
+                                       setBodyAsString "{}" <| httpContext
+    | None -> setStatusCode 400 httpContext
 
-let addUser (next : HttpFunc, httpContext: HttpContext) = 
+let addUser (httpContext: HttpContext) = 
     task {
         let! stringValue = httpContext.ReadBodyFromRequest()
-        return! addUserInternal stringValue next httpContext
+        return! addUserInternal stringValue httpContext
     }
 
 [<Struct>]
@@ -341,15 +351,15 @@ let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
     &&
     (String.IsNullOrEmpty(query.country) || location.country = query.country)
 
-let getUserVisits (userId, next : HttpFunc, httpContext: HttpContext) = 
+let getUserVisits (userId, httpContext: HttpContext) = 
     Interlocked.Increment(getVisitsCount) |> ignore
     if (userId > UsersSize)
-    then setStatusCode 404 next httpContext
+    then setStatusCode 404 httpContext
     else
         let user = users.[userId]
         match box user with      
         | null ->
-            setStatusCode 404 next httpContext
+            setStatusCode 404 httpContext
         | _ ->
             match getUserVisitsQuery httpContext with
             | Som query ->
@@ -363,8 +373,8 @@ let getUserVisits (userId, next : HttpFunc, httpContext: HttpContext) =
                                                                      visited_at = visit.visited_at
                                                                      place = locations.[visit.location].place
                                                                  })
-                jsonBuffer (serializeVisits usersVisits) next httpContext
-            | Non -> setStatusCode 400 next httpContext  
+                jsonBuffer (serializeVisits usersVisits) httpContext
+            | Non -> setStatusCode 400 httpContext  
 
 [<Struct>]
 type QueryAvg = { fromDate: ParseResult<uint32>; toDate: ParseResult<uint32>; fromAge: ParseResult<int>; toAge: ParseResult<int>; gender: ParseResult<char>}
@@ -420,15 +430,15 @@ let inline filterByQueryAvg (query: QueryAvg) (visit: Visit) =
         (diffYears (user.birth_date |> convertToDate) currentDate ) >= fromAge
     | _ -> true
 
-let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) =
+let getAvgMark (locationId, httpContext: HttpContext) =
     Interlocked.Increment(getAvgCount) |> ignore 
     if (locationId > LocationsSize)
-    then setStatusCode 404 next httpContext
+    then setStatusCode 404 httpContext
     else
         let location = locations.[locationId]
         match box location with    
         | null ->
-            setStatusCode 404 <| next <| httpContext
+            setStatusCode 404 <| httpContext
         | _ ->
             match getAvgMarkQuery httpContext with
             | Som query ->
@@ -446,8 +456,8 @@ let getAvgMark (locationId, next : HttpFunc, httpContext: HttpContext) =
                 let avg = if markedVisitsCount > 0.0
                           then Math.Round (sum/markedVisitsCount, 5, MidpointRounding.AwayFromZero)
                           else 0.0
-                jsonBuffer (serializeAvg avg) next httpContext
-            | Non -> setStatusCode 400 next httpContext    
+                jsonBuffer (serializeAvg avg) httpContext
+            | Non -> setStatusCode 400 httpContext    
 
 let private usersPathString = "/users"
 let private usersPathStringX = PathString("/users")
@@ -456,20 +466,20 @@ let private visitsPathStringX = PathString("/visits")
 let private locationsPathString = "/locations"
 let private locationsPathStringX = PathString("/locations")
 
-let inline private tryParseId stringId (f: IdHandler) next ctx =
+let inline private tryParseId stringId f ctx =
    let id = ref 0
    if Int32.TryParse(stringId, id)
-   then f(id.Value, next, ctx)
-   else setStatusCode 404 next ctx
+   then f(id.Value, ctx)
+   else setStatusCode 404 ctx
 
-let customGetRoutef : HttpHandler =
-    fun (next : HttpFunc) (ctx : HttpContext) ->
+let customGetRoutef =
+    fun (ctx : HttpContext) ->
         let id = ref 0
         match ctx.Request.Path.Value with
         | visitPath when (visitPath.StartsWith(visitsPathString, StringComparison.Ordinal)) ->
             if Int32.TryParse(visitPath.Substring(8), id)
-            then getVisit(id.Value, next, ctx)
-            else setStatusCode 404 next ctx
+            then getVisit(id.Value, ctx)
+            else setStatusCode 404 ctx
         | userPath when (userPath.StartsWith(usersPathString, StringComparison.Ordinal)) -> 
             let mutable i = 7
             let mutable result = null
@@ -477,16 +487,16 @@ let customGetRoutef : HttpHandler =
                 if (userPath.[i] = '/' && userPath.[i+1] = 'v')
                 then 
                     if Int32.TryParse(userPath.Substring(7,i-7), id)
-                    then result <- getUserVisits(id.Value, next, ctx)
-                    else result <- setStatusCode 404 next ctx
+                    then result <- getUserVisits(id.Value, ctx)
+                    else result <- setStatusCode 404 ctx
                     i <- userPath.Length
                 else
                     i <- i+1
             if isNull result 
             then 
                 if Int32.TryParse(userPath.Substring(7), id)
-                then getUser(id.Value, next, ctx)
-                else setStatusCode 404 next ctx
+                then getUser(id.Value, ctx)
+                else setStatusCode 404 ctx
             else
                 result
         | locationPath when (locationPath.StartsWith(locationsPathString, StringComparison.Ordinal)) ->          
@@ -496,65 +506,66 @@ let customGetRoutef : HttpHandler =
                 if (locationPath.[i] = '/' && locationPath.[i+1] = 'a')
                 then 
                     if Int32.TryParse(locationPath.Substring(11,i-11), id)
-                    then result <- getAvgMark(id.Value, next, ctx)
-                    else result <- setStatusCode 404 next ctx
+                    then result <- getAvgMark(id.Value, ctx)
+                    else result <- setStatusCode 404 ctx
                     i <- locationPath.Length
                 else
                     i <- i+1
             if isNull result 
             then 
                 if Int32.TryParse(locationPath.Substring(11), id)
-                then getLocation(id.Value, next, ctx)
-                else setStatusCode 404 next ctx
+                then getLocation(id.Value, ctx)
+                else setStatusCode 404 ctx
             else
                 result
-        | _-> shortCircuit
+        | _-> 
+            setStatusCode 404 ctx
 
-let inline private getPostRoute (newRoute: IdHandler) (updateRoute: IdHandler) (remaining: PathString ref) next ctx =
+let inline private getPostRoute newRoute updateRoute (remaining: PathString ref) ctx =
     let pathString = remaining.Value.Value
     if pathString.Equals("/new",StringComparison.Ordinal)
-    then newRoute (0, next, ctx)
-    else tryParseId (pathString.Substring(1)) updateRoute next ctx
+    then newRoute (0, ctx)
+    else tryParseId (pathString.Substring(1)) updateRoute ctx
 
-let customPostRoutef : HttpHandler =
-    fun (next : HttpFunc) (ctx : HttpContext) ->
+let customPostRoutef =
+    fun (ctx : HttpContext) ->
         let remaining = ref PathString.Empty
         match ctx.Request.Path with
         | visitPath when (visitPath.StartsWithSegments(visitsPathStringX, StringComparison.Ordinal, remaining)) ->
             let pathString = remaining.Value.Value
             if pathString.Equals("/new",StringComparison.Ordinal)
-            then addVisit(next, ctx)
+            then addVisit(ctx)
             else 
                 let id = ref 0
                 if Int32.TryParse(pathString.Substring(1), id)
-                then updateVisit(id.Value, next, ctx)
-                else setStatusCode 404 next ctx
+                then updateVisit(id.Value, ctx)
+                else setStatusCode 404 ctx
         | userPath when (userPath.StartsWithSegments(usersPathStringX, StringComparison.Ordinal, remaining)) -> 
             let pathString = remaining.Value.Value
             if pathString.Equals("/new",StringComparison.Ordinal)
-            then addUser(next, ctx)
+            then addUser(ctx)
             else 
                 let id = ref 0
                 if Int32.TryParse(pathString.Substring(1), id)
-                then updateUser(id.Value, next, ctx)
-                else setStatusCode 404 next ctx
+                then updateUser(id.Value, ctx)
+                else setStatusCode 404 ctx
         | locationPath when (locationPath.StartsWithSegments(locationsPathStringX, StringComparison.Ordinal, remaining)) ->    
             let pathString = remaining.Value.Value
             if pathString.Equals("/new",StringComparison.Ordinal)
-            then addLocation(next, ctx)
+            then addLocation(ctx)
             else 
                 let id = ref 0
                 if Int32.TryParse(pathString.Substring(1), id)
-                then updateLocation(id.Value, next, ctx)
-                else setStatusCode 404 next ctx
-        | _-> shortCircuit
+                then updateLocation(id.Value, ctx)
+                else setStatusCode 404 ctx
+        | _-> 
+            setStatusCode 404 ctx
 
 
-let webApp = 
-    choose [
-        GET >=> customGetRoutef
-        POST >=> customPostRoutef
-        setStatusCode 404 ]
+let webApp (ctx: HttpContext) = 
+    if ctx.Request.Method.Equals "GET" 
+    then customGetRoutef ctx
+    else customPostRoutef ctx
 
 // ---------------------------------
 // Error handler
@@ -568,7 +579,7 @@ let errorHandler (ex : Exception) (logger : ILogger)=
 // ---------------------------------
 
 let configureApp (app : IApplicationBuilder) = 
-    app.UseRequestCounter webApp
+    app.UseRequestCounter()
     app.UseGiraffe webApp
 
 let configureKestrel (options : KestrelServerOptions) =
