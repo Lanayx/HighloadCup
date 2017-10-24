@@ -104,7 +104,7 @@ type SerializerBenchmarks() =
     member __.WriteInt32Bufferless() =
         Array.mapi(fun i n -> writeInt32Bufferless buffers.[i] n; buffers.[i]) numbers
 
-let formatCache = sprintf "Int: %iString: %sBool:%b"
+let formatCache = sprintf "Int: %iString: %sBool: %bFloat: %f"
 
 type StringBenchmarks() =
 
@@ -113,28 +113,34 @@ type StringBenchmarks() =
     member val b = "abcde"
     member val c = false
 
+    member val d = -20.2
+
     [<Benchmark>]
-    member this.StringBuilderRun() =
+    member this.StringBuilder() =
         let x = StringBuilder()
-        x.Append("Int: ").Append(this.a).Append("String: ").Append(this.b).Append("Bool: ").Append(this.c).ToString()
+        x.Append("Int: ").Append(this.a).Append("String: ").Append(this.b)
+            .Append("Bool: ").Append(this.c).Append("Float: ").Append(this.d).ToString()
 
     [<Benchmark>]
     member this.StringFormat() =
-        String.Format("Int: {0}String: {1}Bool: {2}",this.a,this.b,this.c)
+        String.Format("Int: {0}String: {1}Bool: {2}Float: {3}",this.a,this.b,this.c,this.d)
 
     [<Benchmark>]
     member this.FsharpFormat() =
-        sprintf "Int: %iString: %sBool:%b" this.a this.b this.c
+        sprintf "Int: %iString: %sBool: %bFloat: %f" this.a this.b this.c this.d
 
 
     [<Benchmark>]
     member this.FsharpFormatCached() =
-        formatCache this.a this.b this.c
+        formatCache this.a this.b this.c this.d
 
     [<Benchmark>]
-    member this.StringConcat() =
-        "Int: " + (string)this.a + "String: " + this.b + "Bool: " + (string)this.c
+    member this.ConcatOneByOne() =
+        "Int: " + (string)this.a + "String: " + this.b + "Bool: " + (string)this.c + "Float: " + (string)this.d
 
+    [<Benchmark>]
+    member this.StringConcat() =        
+        String.Concat("Int: ",(string)this.a,"String: ",this.b,"Bool: ",(string)this.c,"Float: ",(string)this.d)
 
 [<EntryPoint>]
 let main argv =
