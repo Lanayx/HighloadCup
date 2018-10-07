@@ -1,31 +1,51 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
+
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="Juraff/Tasks.fs" />
+    <Compile Include="Zebra/Buffer.fs" />
+    <Compile Include="Zebra/Parsers.fs" />
+    <Compile Include="Zebra/Encoding.fs" />
+    <Compile Include="Zebra/TemplateEngine.fs" />
+    <Compile Include="Zebra/State.fs" />
+    <Compile Include="Zebra/ExecNodes.fs" />
+    <Compile Include="Zebra/RouteNode.fs" />
+    <Compile Include="Zebra/Router.fs" />
+    <Compile Include="Zebra/Composition.fs" />
+    <Compile Include="Zebra/Middleware.fs" />
+    <Compile Include="Zebra/Program.fs" />
+    <!-- <Compile Include="Juraff/Tasks.fs" />
     <Compile Include="Juraff/Common.fs" />
     <Compile Include="Juraff/ComputationExpressions.fs" />
     <Compile Include="Juraff/HttpContextExtensions.fs" />
     <Compile Include="Juraff/HttpHandlers.fs" />
-    <Compile Include="Juraff/Middleware.fs" />
-    <Compile Include="MethodCounter.fs" />
+    <Compile Include="Juraff/Middleware.fs" /> -->
+
+    <!-- <Compile Include="MethodCounter.fs" />
     <Compile Include="GCTimer.fs" />
     <Compile Include="Models.fs" />
     <Compile Include="RequestCounter.fs" />
     <Compile Include="Actors.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="BufferSerializers.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="Program.fs" /> -->
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Jil" Version="2.15.4" />
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
-    <PackageReference Include="System.Buffers" Version="4.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.1.0" />    
+    <PackageReference Include="Dapper" Version="1.50.5" />
+    <PackageReference Include="Npgsql" Version="4.0.0" />
+    <PackageReference Include="Utf8Json" Version="1.3.7" />
   </ItemGroup>
+
   <ItemGroup>
-    <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="2.0.0" />
+    <PackageReference Update="FSharp.Core" Version="4.5.0" />
   </ItemGroup>
+
 </Project>

@@ -16,11 +16,11 @@ open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.AspNetCore.Server.Kestrel.Transport
 open Microsoft.Extensions.Primitives
 open Microsoft.Extensions.Logging
-open Juraff.Common
-open Juraff.Tasks
-open Juraff.HttpHandlers
-open Juraff.Middleware
-open Juraff.HttpContextExtensions
+// open Juraff.Common
+// open Juraff.Tasks
+// open Juraff.HttpHandlers
+// open Juraff.Middleware
+// open Juraff.HttpContextExtensions
 open Jil
 open HCup.Models
 open HCup.RequestCounter
