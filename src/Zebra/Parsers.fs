@@ -40,6 +40,7 @@ let boolParse (path : string,r:Range) =
     | _ -> failure ()
 
 let intParse (path : string,r:Range) =
+    Console.WriteLine("Int parse")
     let mutable result = 0
     let mutable negNumber = false
     let rec go pos =

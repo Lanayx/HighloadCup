@@ -7,17 +7,9 @@ open System.Collections.Concurrent
 type Location() =
         [<DefaultValue>]val mutable id: int32
         [<DefaultValue>]val mutable distance : uint8
-        [<DefaultValue>]val mutable city: byte[] 
-        [<DefaultValue>]val mutable place: byte[]
-        [<DefaultValue>]val mutable country: string
-
-type LocationOld() =
-        [<DefaultValue>]val mutable id: int32
-        [<DefaultValue>]val mutable distance : uint8
         [<DefaultValue>]val mutable city: string 
         [<DefaultValue>]val mutable place: string
         [<DefaultValue>]val mutable country: string
-
 
 
 [<CLIMutable>]
@@ -32,7 +24,7 @@ type LocationUpd =
 [<CLIMutable>]
 type Locations =
     {
-        locations : LocationOld[]
+        locations : Location[]
     }
 
 [<CLIMutable>]
@@ -45,15 +37,8 @@ type UserUpd =
         email: string
     }
 
-type User() =
-        [<DefaultValue>]val mutable id: int32
-        [<DefaultValue>]val mutable first_name : byte[]
-        [<DefaultValue>]val mutable last_name: byte[]
-        [<DefaultValue>]val mutable birth_date: int32
-        [<DefaultValue>]val mutable gender: char
-        [<DefaultValue>]val mutable email: byte[]
 
-type UserOld() =
+type User() =
         [<DefaultValue>]val mutable id: int32
         [<DefaultValue>]val mutable first_name : string
         [<DefaultValue>]val mutable last_name: string
@@ -66,7 +51,7 @@ type UserOld() =
 [<CLIMutable>]
 type Users =
     {
-        users : UserOld[]
+        users : User[]
     }
 
 [<CLIMutable>]
@@ -97,4 +82,4 @@ type StructOption<'a> =
     | Non
 
 [<Struct>]
-type UserVisit = { mark: uint8; visited_at: uint32; place: byte[] }
+type UserVisit = { mark: uint8; visited_at: uint32; place: string }

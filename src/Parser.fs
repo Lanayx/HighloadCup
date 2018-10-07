@@ -11,25 +11,25 @@ type ParseResult<'a> =
     | Empty
     | Error
 
-let inline int32Parse str = 
+let inline int32Parse (str: string) = 
     let result = ref 0
     if Int32.TryParse(str, result)
     then ParseResult.Success result.Value
     else ParseResult.Error
 
-let inline uint32Parse str = 
+let inline uint32Parse (str: string) = 
     let result = ref 0u
     if UInt32.TryParse(str, result)
     then ParseResult.Success result.Value
     else ParseResult.Error
 
-let inline byteParse str = 
+let inline byteParse (str: string) = 
     let result = ref 0uy
     if Byte.TryParse(str, result)
     then ParseResult.Success result.Value
     else ParseResult.Error
 
-let inline genderParse str = 
+let inline genderParse (str: string) = 
     let result = ref '0'
     if Char.TryParse(str, result)
     then ParseResult.Success result.Value

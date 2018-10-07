@@ -17,7 +17,7 @@
     <Compile Include="Zebra/Router.fs" />
     <Compile Include="Zebra/Composition.fs" />
     <Compile Include="Zebra/Middleware.fs" />
-    <Compile Include="Zebra/Program.fs" />
+    <!-- <Compile Include="Zebra/Program.fs" /> -->
     <!-- <Compile Include="Juraff/Tasks.fs" />
     <Compile Include="Juraff/Common.fs" />
     <Compile Include="Juraff/ComputationExpressions.fs" />
@@ -25,14 +25,14 @@
     <Compile Include="Juraff/HttpHandlers.fs" />
     <Compile Include="Juraff/Middleware.fs" /> -->
 
-    <!-- <Compile Include="MethodCounter.fs" />
+    <Compile Include="MethodCounter.fs" />
     <Compile Include="GCTimer.fs" />
     <Compile Include="Models.fs" />
     <Compile Include="RequestCounter.fs" />
     <Compile Include="Actors.fs" />
     <Compile Include="Parser.fs" />
-    <Compile Include="BufferSerializers.fs" />
-    <Compile Include="Program.fs" /> -->
+    <!-- <Compile Include="BufferSerializers.fs" /> -->
+    <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="2.1.1" />
