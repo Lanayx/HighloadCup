@@ -6,6 +6,6 @@ Set-Location src
 Set-Location ..
 docker build -t $container .
 # docker run -it --rm -p 80:80 $container
-# docker login stor.highloadcup.ru
+# docker login stor.highloadcup.ru/v1
 docker tag $container $tag
 docker push $tag

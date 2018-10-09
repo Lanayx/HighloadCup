@@ -74,7 +74,6 @@ let inline checkStringFromRequest (stringValue: string) =
 
 let getUser id (ctx: State<'a>) =
     Interlocked.Increment(getUserCount) |> ignore
-    Console.WriteLine("In User")
     if (id > UsersSize)
     then ctx { status 404 }
         else
@@ -342,8 +341,6 @@ let filterByQueryVisit (query: QueryVisit) (visit: Visit) =
 type UserVisits = { visits: seq<UserVisit> }
 let getUserVisits userId (ctx: State<'a>) =
     Interlocked.Increment(getVisitsCount) |> ignore
-
-    Console.WriteLine("In getUserVisits")
     if (userId > UsersSize)
     then ctx { status 404 }
     else

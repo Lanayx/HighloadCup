@@ -1,4 +1,4 @@
 rmdir data /s /q
-dotnet restore
+REM dotnet restore
 dotnet publish -c Release -r linux-x64 -o ../artifacts
-REM rmdir obj /s /q
+rmdir obj /s /q
